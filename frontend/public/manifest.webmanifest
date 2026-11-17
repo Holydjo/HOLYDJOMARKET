@@ -1,0 +1,10 @@
+{
+  "name": "HOLYDO MARKET",
+  "short_name": "HOLYDO",
+  "description": "Les pros de votre quartier",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf7f1",
+  "theme_color": "#c8502a",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
