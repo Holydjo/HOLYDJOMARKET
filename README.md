@@ -1,2 +1,2 @@
 # HOLYDJOMARKET
-listing services
+HOLYDO MARKET is a web and mobile platform that connects local small businesses and independent service providers with nearby customers. Users can search for services such as hair, braids, beauty, cleaning, and repairs by location, view provider profiles, and contact or book appointments. Providers can create a profile, list their services, prices, photos, opening hours, and travel area after administrator approval.
