@@ -33,7 +33,7 @@ export class Notifier {
 
   welcome(user: { email: string; firstName: string; role: string }) {
     const isPro = user.role === 'PROVIDER';
-    this.send(user.email, 'Bienvenue sur HOLYDO MARKET', {
+    this.send(user.email, 'Bienvenue sur HOLYDJO MARKET', {
       heading: `Bienvenue ${user.firstName} !`,
       lines: isPro
         ? [
@@ -49,7 +49,7 @@ export class Notifier {
     this.send(user.email, 'Réinitialiser votre mot de passe', {
       heading: 'Réinitialisation du mot de passe',
       lines: [
-        `Bonjour ${user.firstName}, vous avez demandé à changer votre mot de passe HOLYDO MARKET.`,
+        `Bonjour ${user.firstName}, vous avez demandé à changer votre mot de passe HOLYDJO MARKET.`,
         'Ce lien est valable 1 heure et ne peut servir qu’une seule fois.',
         'Si vous n’êtes pas à l’origine de cette demande, ignorez simplement cet email : votre mot de passe reste inchangé.',
       ],

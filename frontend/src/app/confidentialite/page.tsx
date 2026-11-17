@@ -7,7 +7,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Politique de confidentialité"
-      intro={`Cette politique explique quels renseignements personnels HOLYDO MARKET (${LEGAL.company}) recueille, pourquoi, avec qui ils sont partagés et quels sont vos droits, conformément à la Loi sur la protection des renseignements personnels dans le secteur privé du Québec (Loi 25) et à la LPRPDE.`}
+      intro={`Cette politique explique quels renseignements personnels HOLYDJO MARKET (${LEGAL.company}) recueille, pourquoi, avec qui ils sont partagés et quels sont vos droits, conformément à la Loi sur la protection des renseignements personnels dans le secteur privé du Québec (Loi 25) et à la LPRPDE.`}
       sections={[
         {
           h: 'Renseignements recueillis',

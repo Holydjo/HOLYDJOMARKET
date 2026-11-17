@@ -7,12 +7,12 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Conditions d’utilisation"
-      intro={`HOLYDO MARKET, exploité par ${LEGAL.company}, est une plateforme qui met en relation des clients avec des prestataires de services locaux (indépendants et petites entreprises). En créant un compte, vous acceptez les conditions ci-dessous.`}
+      intro={`HOLYDJO MARKET, exploité par ${LEGAL.company}, est une plateforme qui met en relation des clients avec des prestataires de services locaux (indépendants et petites entreprises). En créant un compte, vous acceptez les conditions ci-dessous.`}
       sections={[
         {
           h: 'Rôle de la plateforme',
           p: [
-            'HOLYDO MARKET facilite la mise en relation. Nous ne sommes pas partie au contrat entre le client et le prestataire : le prix, le déroulement, le paiement et la qualité de la prestation relèvent d’eux seuls.',
+            'HOLYDJO MARKET facilite la mise en relation. Nous ne sommes pas partie au contrat entre le client et le prestataire : le prix, le déroulement, le paiement et la qualité de la prestation relèvent d’eux seuls.',
             'Les profils des prestataires sont vérifiés par notre équipe avant publication. Cette vérification porte sur le contenu du profil ; elle ne constitue pas une garantie sur les qualifications, les assurances ou les permis du prestataire.',
           ],
         },
@@ -56,7 +56,7 @@ export default function TermsPage() {
         {
           h: 'Responsabilité',
           p: [
-            'Dans la mesure permise par la loi, notamment la Loi sur la protection du consommateur du Québec, HOLYDO MARKET n’est pas responsable des dommages résultant d’une prestation ou d’un litige entre un client et un prestataire. Nous faisons nos meilleurs efforts pour que le service soit disponible, sans pouvoir garantir une disponibilité continue.',
+            'Dans la mesure permise par la loi, notamment la Loi sur la protection du consommateur du Québec, HOLYDJO MARKET n’est pas responsable des dommages résultant d’une prestation ou d’un litige entre un client et un prestataire. Nous faisons nos meilleurs efforts pour que le service soit disponible, sans pouvoir garantir une disponibilité continue.',
           ],
         },
         {

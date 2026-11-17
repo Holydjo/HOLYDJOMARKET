@@ -1,5 +1,5 @@
 // =============================================================================
-// HOLYDO MARKET — Database schema (Prisma + PostgreSQL)
+// HOLYDJO MARKET — Database schema (Prisma + PostgreSQL)
 //
 // Core idea:
 //   User (customer | provider | admin)

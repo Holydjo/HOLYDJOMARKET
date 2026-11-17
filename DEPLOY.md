@@ -1,4 +1,4 @@
-# Deploying HOLYDO MARKET (staging)
+# Deploying HOLYDJO MARKET (staging)
 
 The plan: **API + database on Render**, **website on Vercel**, **photos on Cloudinary**, **emails through Resend**. Each has a free plan that's enough for a staging site. Allow about 30 minutes.
 
@@ -19,7 +19,7 @@ You need the code on GitHub first (`main` branch, or merge the open pull request
 
 1. Create a free account at resend.com and create an **API key**.
 2. Your `SMTP_URL` is `smtps://resend:YOUR_API_KEY@smtp.resend.com:465`.
-3. Until you verify your own domain in Resend, set `MAIL_FROM` to `HOLYDO MARKET <onboarding@resend.dev>`. In that mode Resend only delivers to **your own** email address, which is fine for testing. Verify a domain (for example holydomarket.com) before inviting real users.
+3. Until you verify your own domain in Resend, set `MAIL_FROM` to `HOLYDJO MARKET <onboarding@resend.dev>`. In that mode Resend only delivers to **your own** email address, which is fine for testing. Verify a domain (for example holydomarket.com) before inviting real users.
 
 Any other SMTP provider (Brevo, SendGrid, Mailgun…) works the same way. Only `SMTP_URL` changes.
 

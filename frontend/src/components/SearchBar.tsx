@@ -35,6 +35,7 @@ export function SearchBar({ initial = {}, compact = false }: { initial?: SearchV
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState('');
 
+  /** "Autour de moi": get the position, then search right away (one tap). */
   async function locate() {
     setError('');
     setLocating(true);
@@ -42,6 +43,7 @@ export function SearchBar({ initial = {}, compact = false }: { initial?: SearchV
       const c = await getPosition();
       setCoords(c);
       setPlace('Autour de moi');
+      router.push(`/recherche?${toQuery({ category, lat: c.lat, lng: c.lng })}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -91,8 +93,8 @@ export function SearchBar({ initial = {}, compact = false }: { initial?: SearchV
             className="w-full bg-transparent text-[15px] font-medium outline-none placeholder:font-normal placeholder:text-muted/70"
           />
         </div>
-        <button type="button" onClick={locate} className="chip shrink-0 hover:border-ink" disabled={locating}>
-          {locating ? '…' : '◎'} <span className="hidden sm:inline">Autour de moi</span>
+        <button type="button" onClick={locate} className="chip shrink-0 hover:border-ink" disabled={locating} aria-label="Rechercher autour de moi">
+          {locating ? 'Localisation…' : <>◎ <span className="hidden sm:inline">Autour de moi</span></>}
         </button>
       </div>
 

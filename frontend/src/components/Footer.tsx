@@ -27,7 +27,7 @@ export function Footer() {
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-line py-5 text-xs text-muted">
-        <span>© {new Date().getFullYear()} HOLYDO MARKET</span>
+        <span>© {new Date().getFullYear()} HOLYDJO MARKET</span>
         <Link href="/conditions" className="hover:text-ink">Conditions d’utilisation</Link>
         <Link href="/confidentialite" className="hover:text-ink">Confidentialité</Link>
       </div>

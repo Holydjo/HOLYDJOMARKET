@@ -1,4 +1,4 @@
-# Render Blueprint — API + PostgreSQL for HOLYDO MARKET (staging).
+# Render Blueprint — API + PostgreSQL for HOLYDJO MARKET (staging).
 # Render dashboard → New → Blueprint → pick this repository.
 # Values marked `sync: false` are asked for when the blueprint is created.
 databases:
@@ -35,7 +35,7 @@ services:
         sync: false
       - key: SMTP_URL         # e.g. smtps://resend:API_KEY@smtp.resend.com:465
         sync: false
-      - key: MAIL_FROM        # e.g. HOLYDO MARKET <onboarding@resend.dev>
+      - key: MAIL_FROM        # e.g. HOLYDJO MARKET <onboarding@resend.dev>
         sync: false
       - key: CLOUDINARY_URL   # cloudinary://API_KEY:API_SECRET@CLOUD_NAME
         sync: false

@@ -14,7 +14,7 @@ export interface Email {
  * Mailgun, Gmail… — anything that gives you an SMTP URL).
  *
  *   SMTP_URL="smtps://USER:PASSWORD@smtp.example.com:465"
- *   MAIL_FROM="HOLYDO MARKET <bonjour@your-domain.com>"
+ *   MAIL_FROM="HOLYDJO MARKET <bonjour@your-domain.com>"
  *
  * Without SMTP_URL (local dev) emails are printed in the API console instead,
  * so every flow can be tested without an email account.
@@ -31,7 +31,7 @@ export class MailService {
   constructor(config: ConfigService) {
     const url = config.get<string>('SMTP_URL');
     this.transport = url ? createTransport(url) : null;
-    this.from = config.get('MAIL_FROM', 'HOLYDO MARKET <no-reply@holydo.test>');
+    this.from = config.get('MAIL_FROM', 'HOLYDJO MARKET <no-reply@holydo.test>');
     if (!this.transport) this.log.warn('SMTP_URL not set — emails will be printed to the console');
   }
 

@@ -4,14 +4,14 @@ import { mediaUrl } from '@/lib/api';
 
 export function Logo({ light = false }: { light?: boolean }) {
   return (
-    <Link href="/" className="flex items-center gap-2" aria-label="HOLYDO MARKET — accueil">
+    <Link href="/" className="flex items-center gap-2" aria-label="HOLYDJO MARKET — accueil">
       {/* Mark: a map pin made of two overlapping rounded shapes = "local" + "market stall" */}
       <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden>
         <path d="M16 2c6.6 0 12 5.2 12 11.7C28 22 16 30 16 30S4 22 4 13.7C4 7.2 9.4 2 16 2Z" fill="var(--primary)" />
         <path d="M10 12h12l-1.4 4.6a2 2 0 0 1-1.9 1.4h-5.4a2 2 0 0 1-1.9-1.4L10 12Zm2.5-2.5a3.5 3.5 0 0 1 7 0" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span className={`h-display text-[17px] font-extrabold leading-none ${light ? 'text-white' : ''}`}>
-        HOLYDO<span className="text-primary"> MARKET</span>
+        HOLYDJO<span className="text-primary"> MARKET</span>
       </span>
     </Link>
   );
