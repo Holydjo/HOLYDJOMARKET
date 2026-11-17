@@ -1,0 +1,211 @@
+// =============================================================================
+// HOLYDO MARKET — Database schema (Prisma + PostgreSQL)
+//
+// Core idea:
+//   User (customer | provider | admin)
+//     └─ ProviderProfile (1:1, only for providers) — must be APPROVED by an admin
+//          ├─ Service[]        what they sell, with price + duration + category
+//          ├─ Photo[]          gallery
+//          ├─ OpeningHours[]   one row per weekday
+//          ├─ Review[]         left by customers
+//          └─ AppointmentRequest[]  booking / contact requests from customers
+//   ModerationLog keeps an audit trail of every admin decision.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+/// Independent person (freelance braider, handyman…) vs. registered business (salon, shop…)
+enum ProviderKind {
+  INDEPENDENT
+  BUSINESS
+}
+
+/// Lifecycle of a provider profile. Only APPROVED profiles are visible in search.
+enum ProfileStatus {
+  DRAFT // being filled in, never submitted
+  PENDING // submitted, waiting for an admin
+  APPROVED // public
+  REJECTED // admin refused, see rejectionReason; provider can fix and resubmit
+}
+
+enum AppointmentStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String // bcrypt hash, never returned by the API
+  firstName String
+  lastName  String
+  phone     String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  providerProfile ProviderProfile?
+  reviews         Review[]
+  appointments    AppointmentRequest[] @relation("CustomerAppointments")
+  moderations     ModerationLog[]
+}
+
+model Category {
+  id       String    @id @default(uuid())
+  slug     String    @unique // "hair", "braids"… used in URLs
+  name     String
+  icon     String // emoji used in the UI; cheap and works everywhere
+  order    Int       @default(0)
+  services Service[]
+}
+
+model ProviderProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  slug        String       @unique // public URL: /p/<slug>
+  kind        ProviderKind @default(INDEPENDENT)
+  displayName String
+  tagline     String?
+  description String?
+  phone       String?
+  whatsapp    String?
+
+  // --- Location ---------------------------------------------------------
+  // We store a point (lat/lng) for distance search plus human-readable
+  // city / neighbourhood for display and text search.
+  address       String?
+  neighbourhood String?
+  city          String
+  latitude      Float
+  longitude     Float
+
+  // --- Where the service happens ---------------------------------------
+  // Several can be true at once (e.g. salon AND travels to client).
+  atHome      Boolean @default(false) // provider receives clients at their own home
+  inSalon     Boolean @default(false)
+  inShop      Boolean @default(false)
+  travels     Boolean @default(false) // provider goes to the client
+  travelRadiusKm Int  @default(0) // only meaningful when travels = true
+
+  // --- Moderation ---------------------------------------------------------
+  status          ProfileStatus @default(DRAFT)
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  rejectionReason String?
+
+  // Denormalised rating so search can sort without aggregating every time.
+  ratingAvg   Float @default(0)
+  ratingCount Int   @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  services     Service[]
+  photos       Photo[]
+  openingHours OpeningHours[]
+  reviews      Review[]
+  appointments AppointmentRequest[]
+  moderation   ModerationLog[]
+
+  @@index([status, city])
+  @@index([latitude, longitude])
+}
+
+model Service {
+  id          String          @id @default(uuid())
+  profileId   String
+  profile     ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category        @relation(fields: [categoryId], references: [id])
+  name        String
+  description String?
+  priceCents  Int // store money as integer cents to avoid float errors
+  priceFrom   Boolean @default(false) // displays "from $X" when price varies
+  durationMin Int?
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+
+  appointments AppointmentRequest[]
+
+  @@index([categoryId])
+}
+
+model Photo {
+  id        String          @id @default(uuid())
+  profileId String
+  profile   ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  url       String // either /uploads/<file> or an absolute URL (seed data)
+  isCover   Boolean @default(false)
+  order     Int     @default(0)
+  createdAt DateTime @default(now())
+}
+
+model OpeningHours {
+  id        String          @id @default(uuid())
+  profileId String
+  profile   ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  weekday   Int // 0 = Sunday … 6 = Saturday (same as JS Date.getDay())
+  opensAt   String? // "09:00" — null when closed
+  closesAt  String? // "18:00"
+  closed    Boolean @default(false)
+
+  @@unique([profileId, weekday])
+}
+
+model Review {
+  id         String          @id @default(uuid())
+  profileId  String
+  profile    ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  rating     Int // 1..5
+  comment    String?
+  createdAt  DateTime        @default(now())
+
+  @@unique([profileId, authorId]) // one review per customer per provider
+}
+
+model AppointmentRequest {
+  id          String            @id @default(uuid())
+  profileId   String
+  profile     ProviderProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    User              @relation("CustomerAppointments", fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId   String?
+  service     Service?          @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  requestedAt DateTime // desired date/time
+  location    String? // address when the provider travels to the client
+  message     String?
+  status      AppointmentStatus @default(PENDING)
+  providerNote String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model ModerationLog {
+  id        String          @id @default(uuid())
+  profileId String
+  profile   ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  adminId   String
+  admin     User            @relation(fields: [adminId], references: [id])
+  action    ProfileStatus // APPROVED or REJECTED
+  reason    String?
+  createdAt DateTime        @default(now())
+}
