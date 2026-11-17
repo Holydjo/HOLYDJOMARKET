@@ -64,7 +64,7 @@ function Results() {
 
   return (
     <div className="container-x pt-4 md:pt-6">
-      <SearchBar compact initial={{ category: get('category'), place: get('place'), lat: lat ? +lat : undefined, lng: lng ? +lng : undefined }} />
+      <SearchBar compact initial={{ category: get('category'), place: get('place'), label: get('label'), lat: lat ? +lat : undefined, lng: lng ? +lng : undefined }} />
 
       {/* ---------- filters (horizontal scroll on mobile) ---------- */}
       <div className="-mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
@@ -102,7 +102,7 @@ function Results() {
         {data && <p className="shrink-0 text-sm text-muted">{data.total} résultat{data.total > 1 ? 's' : ''}</p>}
       </div>
       {get('place') && data && !data.center && (
-        <p className="mt-1 text-xs text-muted">Quartier non reconnu : recherche par nom de ville. Activez « Autour de moi » pour trier par distance.</p>
+        <p className="mt-1 text-xs text-muted">Lieu introuvable : recherche par nom de ville. Choisissez une suggestion ou activez « Autour de moi » pour trier par distance.</p>
       )}
 
       {error && <div className="mt-4"><Alert>{error}</Alert></div>}

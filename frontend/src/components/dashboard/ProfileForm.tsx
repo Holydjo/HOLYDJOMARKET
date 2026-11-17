@@ -2,18 +2,19 @@
 
 /**
  * Create / edit the provider profile: identity, contact, location and
- * "where the service happens". Location comes from the neighbourhood list
- * (fills coordinates automatically) or the device GPS.
+ * "where the service happens". Location comes from the address autocomplete
+ * (fills neighbourhood, city and coordinates), the device GPS, or — if the
+ * provider types without picking — the API geocodes the text on save.
  */
 import { useState } from 'react';
 import { Alert } from '@/components/ui';
 import { api } from '@/lib/api';
-import { getPosition, usePlaces } from '@/lib/hooks';
+import { PlaceInput } from '@/components/PlaceInput';
+import { getPosition } from '@/lib/hooks';
 import { MODE_LABEL, MODES } from '@/lib/labels';
 import type { Mode, ProviderKind, ProviderProfile } from '@/lib/types';
 
 export function ProfileForm({ profile, onSaved }: { profile: ProviderProfile | null; onSaved: () => void }) {
-  const places = usePlaces();
   const [f, setF] = useState({
     kind: (profile?.kind ?? 'INDEPENDENT') as ProviderKind,
     displayName: profile?.displayName ?? '',
@@ -36,10 +37,9 @@ export function ProfileForm({ profile, onSaved }: { profile: ProviderProfile | n
   const [msg, setMsg] = useState<{ tone: 'error' | 'success'; text: string } | null>(null);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((s) => ({ ...s, [k]: v }));
 
-  function pickPlace(name: string) {
-    const p = places.find((x) => x.name === name);
-    setF((s) => ({ ...s, neighbourhood: name, ...(p ? { city: p.city, latitude: p.lat, longitude: p.lng } : {}) }));
-  }
+  /** Typing in a location field invalidates the saved coordinates (the API will geocode the text). */
+  const editLocation = (k: 'address' | 'neighbourhood' | 'city', v: string) =>
+    setF((s) => ({ ...s, [k]: v, latitude: undefined, longitude: undefined }));
 
   async function useGps() {
     try {
@@ -54,13 +54,17 @@ export function ProfileForm({ profile, onSaved }: { profile: ProviderProfile | n
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
-    if (f.latitude == null) return setMsg({ tone: 'error', text: 'Choisissez votre quartier dans la liste ou utilisez votre position.' });
+    if (f.latitude == null && !f.address.trim() && !f.neighbourhood.trim()) {
+      return setMsg({ tone: 'error', text: 'Indiquez votre adresse ou votre quartier, ou utilisez votre position.' });
+    }
     if (!MODES.some((m) => f[m])) return setMsg({ tone: 'error', text: 'Indiquez au moins un lieu de prestation.' });
     const sensitive = profile?.status === 'APPROVED' && (f.displayName !== profile.displayName || f.kind !== profile.kind);
     if (sensitive && !confirm('Changer le nom ou le type renverra votre profil en validation (il sera masqué en attendant). Continuer ?')) return;
     setBusy(true);
     try {
-      await api.put('/me/profile', { ...f, travelRadiusKm: f.travels ? Number(f.travelRadiusKm) : 0 });
+      const saved = await api.put<ProviderProfile>('/me/profile', { ...f, travelRadiusKm: f.travels ? Number(f.travelRadiusKm) : 0 });
+      // Keep the coordinates the API resolved, so the next save doesn't geocode again.
+      setF((s) => ({ ...s, latitude: saved.latitude, longitude: saved.longitude, city: saved.city }));
       setMsg({ tone: 'success', text: 'Profil enregistré ✓' });
       onSaved();
     } catch (err) {
@@ -105,26 +109,44 @@ export function ProfileForm({ profile, onSaved }: { profile: ProviderProfile | n
 
       <div className="card space-y-4 p-5 md:p-6">
         <h2 className="h-display text-lg font-bold">Où êtes-vous ?</h2>
+        <div>
+          <label className="label" htmlFor="ad">Adresse</label>
+          <PlaceInput
+            id="ad"
+            className="input"
+            placeholder="Commencez à taper votre adresse…"
+            value={f.address}
+            onChange={(v) => editLocation('address', v)}
+            onPick={(r) =>
+              setF((s) => ({
+                ...s,
+                address: r.kind === 'address' || r.kind === 'street' ? r.name : s.address,
+                neighbourhood: r.neighbourhood ?? s.neighbourhood,
+                city: r.city ?? s.city,
+                latitude: r.lat,
+                longitude: r.lng,
+              }))
+            }
+          />
+          <p className="hint">Choisissez une suggestion. L’adresse exacte n’est publique que pour un salon ou une boutique. Si vous recevez chez vous, seuls les clients dont vous acceptez le rendez-vous la reçoivent.</p>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="label" htmlFor="nb">Quartier</label>
-            <select id="nb" className="input" value={places.some((p) => p.name === f.neighbourhood) ? f.neighbourhood : ''} onChange={(e) => pickPlace(e.target.value)}>
-              <option value="">Choisir…</option>
-              {places.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
-            </select>
+            <input id="nb" className="input" value={f.neighbourhood} onChange={(e) => editLocation('neighbourhood', e.target.value)} />
           </div>
           <div>
             <label className="label" htmlFor="ct">Ville</label>
-            <input id="ct" required className="input" value={f.city} onChange={(e) => set('city', e.target.value)} />
+            <input id="ct" required className="input" value={f.city} onChange={(e) => editLocation('city', e.target.value)} />
           </div>
-        </div>
-        <div>
-          <label className="label" htmlFor="ad">Adresse <span className="text-muted">(affichée seulement si vous recevez des clients)</span></label>
-          <input id="ad" className="input" value={f.address} onChange={(e) => set('address', e.target.value)} />
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <button type="button" onClick={useGps} className="btn-ghost btn-sm">◎ Utiliser ma position exacte</button>
-          {f.latitude != null && <span className="text-xs text-green">✓ Localisation définie</span>}
+          {f.latitude != null ? (
+            <span className="text-xs text-green">✓ Position sur la carte définie</span>
+          ) : (
+            <span className="text-xs text-muted">La position sera calculée à partir de l’adresse à l’enregistrement.</span>
+          )}
         </div>
       </div>
 

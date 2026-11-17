@@ -21,16 +21,24 @@ Requirements: Node 20+ and a running PostgreSQL.
 cd backend
 cp .env.example .env          # set DATABASE_URL and JWT_SECRET
 npm install
-npm run db:push               # create tables from prisma/schema.prisma
+npm run db:migrate            # create tables (prisma/migrations)
 npm run db:seed               # demo data (wipes the database first)
 npm run start:dev
 
 # 2. Web — http://localhost:4000
 cd ../frontend
-echo 'NEXT_PUBLIC_API_URL=http://localhost:4001' > .env.local
-npm install
+npm install                   # API URL defaults to <same host>:4001 (set NEXT_PUBLIC_API_URL in production)
 npm run dev
 ```
+
+### Test on your phone
+
+1. Connect the phone to the same Wi-Fi as the computer running both servers.
+2. Find the computer's local IP (macOS: `ipconfig getifaddr en0`, e.g. `192.168.2.39`).
+3. On the phone, open `http://<that-ip>:4000`. The app automatically calls the API at `http://<that-ip>:4001`.
+4. To install it like an app: Safari → Share → **Add to Home Screen** (iPhone) or Chrome → ⋮ → **Add to Home screen** (Android).
+
+"Autour de moi" (GPS) needs HTTPS, so on a phone over plain `http://` pick a neighbourhood instead. It works once the site is deployed with HTTPS.
 
 ### Demo accounts (created by `npm run db:seed`)
 
@@ -43,6 +51,53 @@ Every demo account uses the password defined as `DEMO_PASSWORD` in `backend/pris
 | Provider (approved, has a pending request) | `awa@holydo.test` |
 | Provider (pending review) | `ruth@holydo.test` |
 | Provider (rejected, must fix) | `dan@holydo.test` |
+
+## Accounts and security
+
+- **Forgot password:** `/mot-de-passe-oublie` emails a one-time link, valid for 1 hour. Using it signs out every other session.
+- **Rate limits per IP address:**
+  - login: 10 attempts per 15 minutes
+  - sign-up: 10 per hour
+  - reset emails: 5 per hour
+  - booking requests: 20 per hour
+  - everything else: 120 per minute
+- **Behind a proxy:** set `TRUST_PROXY=1` only when a reverse proxy sits in front of the API (Render does).
+- **Security headers:** set with Helmet.
+- **Consent:** sign-up requires accepting the terms and the privacy policy, and the acceptance date is stored.
+- **Address privacy:**
+  - a provider's exact address is public only for a salon or a shop;
+  - home-based providers show only their neighbourhood;
+  - a client gets the exact address in the confirmation email once the request is accepted.
+
+## Address search
+
+Location fields (the main search and the provider's address) suggest places while you type: addresses, streets, neighbourhoods and cities from OpenStreetMap, through the free Photon geocoder (`backend/src/geo/geocoding.service.ts`).
+- Results are favoured around Montréal (`GEO_BIAS_LAT` / `GEO_BIAS_LNG`), limited to Canada, and cached for 24 hours.
+- If Photon is unavailable, search falls back to the built-in neighbourhood list.
+
+## Legal pages
+
+`/conditions` and `/confidentialite` are **drafts** written for Québec (Loi 25). Before launch:
+1. Fill in the company details in `frontend/src/lib/legal.ts`.
+2. Have both pages reviewed by a lawyer.
+3. Set `LEGAL_REVIEWED = true` to remove the draft banner.
+
+## Emails
+
+The API sends emails when:
+- an account is created (welcome)
+- a user asks to reset their password
+- a customer sends a booking request (to the provider)
+- a provider accepts or declines a request (to the customer)
+- a customer cancels a request (to the provider)
+- a profile is submitted for review (to every admin)
+- an admin approves or rejects a profile (to the provider)
+
+Locally, without `SMTP_URL`, the emails are **printed in the API console** so you can test every flow. The templates are in `backend/src/mail/`.
+
+## Deploying
+
+See [DEPLOY.md](DEPLOY.md): API and database on Render (`render.yaml`), website on Vercel, photos on Cloudinary, emails through any SMTP provider.
 
 ## User journeys
 
@@ -95,4 +150,4 @@ frontend/src/
 
 ## Not in V1 (planned)
 
-Online payment, real-time chat, email and SMS notifications, native iOS and Android apps (they would use the same API), cloud photo storage (S3 or Cloudinary instead of `backend/uploads/`), a full English translation, a geocoding API to replace the built-in neighbourhood list (`src/common/places.ts`), and PostGIS once the number of providers grows.
+Online payment, real-time chat, SMS notifications, account deletion from the app (by email for now), native iOS and Android apps (they would use the same API), a full English translation, and PostGIS once the number of providers grows.

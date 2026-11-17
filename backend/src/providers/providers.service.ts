@@ -8,6 +8,8 @@ import { Prisma } from '@prisma/client';
 import { boundingBox, distanceKm, slugify } from '../common/geo';
 import { findPlace } from '../common/places';
 import { AuthUser } from '../common/auth.decorators';
+import { GeocodingService } from '../geo/geocoding.service';
+import { Notifier } from '../mail/notifier';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpeningHoursDto, SearchQueryDto, ServiceDto, UpsertProfileDto } from './dto/provider.dto';
 
@@ -28,9 +30,15 @@ const SENSITIVE_FIELDS: (keyof UpsertProfileDto)[] = ['displayName', 'kind'];
 
 const DEFAULT_RADIUS_KM = 15;
 
+const logError = (e: Error) => console.error('[Mail]', e.message);
+
 @Injectable()
 export class ProvidersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notify: Notifier,
+    private geo: GeocodingService,
+  ) {}
 
   // ===========================================================================
   // PUBLIC — search & profile page
@@ -38,7 +46,8 @@ export class ProvidersService {
 
   /**
    * Location-based search.
-   * 1. Resolve a search centre: explicit lat/lng (GPS) > named place > none.
+   * 1. Resolve a search centre: explicit lat/lng (GPS or a picked suggestion)
+   *    > typed place (built-in list, then OpenStreetMap geocoding) > none.
    * 2. SQL: approved profiles, matching category/kind/mode/text, inside a
    *    bounding box around the centre (radius + 100 km margin so travelling
    *    providers further away can still be found, then filtered precisely).
@@ -49,10 +58,15 @@ export class ProvidersService {
     const radius = q.radiusKm ?? DEFAULT_RADIUS_KM;
     let center: { lat: number; lng: number; label: string } | null = null;
     if (q.lat != null && q.lng != null) center = { lat: q.lat, lng: q.lng, label: 'Ma position' };
-    else if (q.place) {
+    else if (q.place?.trim()) {
       const p = findPlace(q.place);
       if (p) center = { lat: p.lat, lng: p.lng, label: p.name };
+      else {
+        const g = await this.geo.resolve(q.place);
+        if (g) center = { lat: g.lat, lng: g.lng, label: g.label };
+      }
     }
+    if (center && q.label) center.label = q.label;
 
     const where: Prisma.ProviderProfileWhereInput = { status: 'APPROVED' };
     if (q.kind) where.kind = q.kind;
@@ -155,8 +169,16 @@ export class ProvidersService {
     if (p.status !== 'APPROVED' && !isOwner && !isAdmin) {
       throw new NotFoundException('Prestataire introuvable');
     }
-    const { userId, rejectionReason, ...rest } = p;
-    return { ...rest, isPreview: p.status !== 'APPROVED', rejectionReason: isOwner || isAdmin ? rejectionReason : null };
+    const { userId, rejectionReason, address, ...rest } = p;
+    // Privacy: an exact address is public only for a salon or shop. People who
+    // receive clients at home share it after accepting an appointment (email).
+    const publicAddress = p.inSalon || p.inShop || isOwner || isAdmin ? address : null;
+    return {
+      ...rest,
+      address: publicAddress,
+      isPreview: p.status !== 'APPROVED',
+      rejectionReason: isOwner || isAdmin ? rejectionReason : null,
+    };
   }
 
   // ===========================================================================
@@ -177,7 +199,15 @@ export class ProvidersService {
 
   /** Create on first call, partial update afterwards. */
   async upsertMine(userId: string, dto: UpsertProfileDto) {
-    // Fill coordinates from the neighbourhood list when the provider picked a place.
+    // No coordinates sent: derive them from the address or the neighbourhood.
+    if ((dto.latitude == null || dto.longitude == null) && (dto.address || dto.neighbourhood)) {
+      const g = await this.geo.resolve([dto.address, dto.neighbourhood, dto.city].filter(Boolean).join(', '));
+      if (g) {
+        dto.latitude = g.lat;
+        dto.longitude = g.lng;
+        dto.city ??= g.city ?? undefined;
+      }
+    }
     if ((dto.latitude == null || dto.longitude == null) && dto.neighbourhood) {
       const place = findPlace(dto.neighbourhood);
       if (place) {
@@ -211,11 +241,14 @@ export class ProvidersService {
     const sensitiveChanged = SENSITIVE_FIELDS.some(
       (f) => dto[f] !== undefined && dto[f] !== (existing as any)[f],
     );
-    if (existing.status === 'APPROVED' && sensitiveChanged) {
+    const backToReview = existing.status === 'APPROVED' && sensitiveChanged;
+    if (backToReview) {
       data.status = 'PENDING';
       data.submittedAt = new Date();
     }
-    return this.prisma.providerProfile.update({ where: { id: existing.id }, data });
+    const updated = await this.prisma.providerProfile.update({ where: { id: existing.id }, data });
+    if (backToReview) void this.notify.profileSubmitted(updated.id).catch(logError);
+    return updated;
   }
 
   /** DRAFT/REJECTED → PENDING, after checking the profile is complete enough. */
@@ -237,10 +270,12 @@ export class ProvidersService {
       throw new BadRequestException(`Avant de soumettre, ajoutez : ${missing.join(', ')}.`);
     }
 
-    return this.prisma.providerProfile.update({
+    const submitted = await this.prisma.providerProfile.update({
       where: { id: p.id },
       data: { status: 'PENDING', submittedAt: new Date(), rejectionReason: null },
     });
+    void this.notify.profileSubmitted(p.id).catch(logError);
+    return submitted;
   }
 
   // --- Services --------------------------------------------------------------
@@ -282,6 +317,13 @@ export class ProvidersService {
   }
 
   // --- Photos ----------------------------------------------------------------
+
+  async assertCanAddPhoto(userId: string) {
+    const p = await this.requireMine(userId);
+    if ((await this.prisma.photo.count({ where: { profileId: p.id } })) >= 12) {
+      throw new BadRequestException('Maximum 12 photos');
+    }
+  }
 
   async addPhoto(userId: string, url: string) {
     const p = await this.requireMine(userId);

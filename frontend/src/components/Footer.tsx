@@ -3,8 +3,8 @@ import { Logo } from './ui';
 
 export function Footer() {
   return (
-    <footer className="mt-20 hidden border-t border-line bg-card md:block">
-      <div className="container-x grid gap-8 py-12 md:grid-cols-4">
+    <footer className="mt-20 border-t border-line bg-card pb-20 md:pb-0">
+      <div className="container-x hidden gap-8 py-12 md:grid md:grid-cols-4">
         <div className="md:col-span-2">
           <Logo />
           <p className="mt-3 max-w-sm text-sm text-muted">
@@ -26,7 +26,11 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-line py-5 text-center text-xs text-muted">© {new Date().getFullYear()} HOLYDO MARKET</div>
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-line py-5 text-xs text-muted">
+        <span>© {new Date().getFullYear()} HOLYDO MARKET</span>
+        <Link href="/conditions" className="hover:text-ink">Conditions d’utilisation</Link>
+        <Link href="/confidentialite" className="hover:text-ink">Confidentialité</Link>
+      </div>
     </footer>
   );
 }

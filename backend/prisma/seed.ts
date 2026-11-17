@@ -230,6 +230,12 @@ function slugify(s: string) {
 }
 
 async function main() {
+  // Safety net: this script deletes everything. Refuse on production unless explicitly allowed
+  // (e.g. ALLOW_DEMO_SEED=true on a staging server you want to fill with demo data).
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_SEED !== 'true') {
+    throw new Error('Refusing to wipe a production database. Set ALLOW_DEMO_SEED=true to seed a staging server.');
+  }
+
   // Clean slate (children first because of foreign keys).
   await prisma.moderationLog.deleteMany();
   await prisma.review.deleteMany();

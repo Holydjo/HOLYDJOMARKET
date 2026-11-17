@@ -2,16 +2,18 @@
 
 /**
  * The main "what + where" search used on the home page and results page.
- * Location can be: a neighbourhood/city from the suggestion list, free text,
- * or the device position ("Autour de moi").
+ * Location can be: a suggestion (address, neighbourhood, city — sent as
+ * coordinates), free text (the API geocodes it), or the device position.
  */
 import { useRouter } from 'next/navigation';
 import { useId, useState } from 'react';
-import { getPosition, useCategories, usePlaces } from '@/lib/hooks';
+import { getPosition, useCategories } from '@/lib/hooks';
+import { PlaceInput } from './PlaceInput';
 
 export interface SearchValue {
   category?: string;
   place?: string;
+  label?: string;
   lat?: number;
   lng?: number;
 }
@@ -25,10 +27,10 @@ export function toQuery(v: SearchValue & Record<string, string | number | undefi
 export function SearchBar({ initial = {}, compact = false }: { initial?: SearchValue; compact?: boolean }) {
   const router = useRouter();
   const cats = useCategories();
-  const places = usePlaces();
-  const listId = useId();
+  const whereId = useId();
   const [category, setCategory] = useState(initial.category ?? '');
-  const [place, setPlace] = useState(initial.place ?? (initial.lat ? 'Autour de moi' : ''));
+  const [place, setPlace] = useState(initial.place ?? initial.label ?? (initial.lat ? 'Autour de moi' : ''));
+  // Coordinates of the picked suggestion / GPS; cleared as soon as the user edits the text.
   const [coords, setCoords] = useState(initial.lat && initial.lng ? { lat: initial.lat, lng: initial.lng } : null);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +51,9 @@ export function SearchBar({ initial = {}, compact = false }: { initial?: SearchV
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const q = coords && place === 'Autour de moi' ? { category, lat: coords.lat, lng: coords.lng } : { category, place };
+    const q = coords
+      ? { category, lat: coords.lat, lng: coords.lng, label: place === 'Autour de moi' ? undefined : place }
+      : { category, place };
     router.push(`/recherche?${toQuery(q)}`);
   }
 
@@ -70,22 +74,23 @@ export function SearchBar({ initial = {}, compact = false }: { initial?: SearchV
 
       <div className="flex items-center gap-3 rounded-2xl px-4 py-2.5 hover:bg-paper md:border-l md:border-line">
         <span className="text-lg" aria-hidden>📍</span>
-        <label className="flex-1">
-          <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted">Où ?</span>
-          <input
-            list={listId}
+        <div className="min-w-0 flex-1">
+          <label htmlFor={whereId} className="block text-[11px] font-semibold uppercase tracking-wide text-muted">Où ?</label>
+          <PlaceInput
+            id={whereId}
             value={place}
-            onChange={(e) => {
-              setPlace(e.target.value);
+            onChange={(t) => {
+              setPlace(t);
               setCoords(null);
             }}
-            placeholder="Quartier ou ville"
+            onPick={(r) => {
+              setPlace(r.label);
+              setCoords({ lat: r.lat, lng: r.lng });
+            }}
+            placeholder="Adresse, quartier ou ville"
             className="w-full bg-transparent text-[15px] font-medium outline-none placeholder:font-normal placeholder:text-muted/70"
           />
-          <datalist id={listId}>
-            {places.map((p) => <option key={p.name} value={p.name} />)}
-          </datalist>
-        </label>
+        </div>
         <button type="button" onClick={locate} className="chip shrink-0 hover:border-ink" disabled={locating}>
           {locating ? '…' : '◎'} <span className="hidden sm:inline">Autour de moi</span>
         </button>

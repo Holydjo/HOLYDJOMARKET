@@ -14,9 +14,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { randomUUID } from 'crypto';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
+import { StorageService } from '../storage/storage.service';
 import {
   AuthUser,
   CurrentUser,
@@ -47,12 +46,9 @@ export class ProvidersController {
   }
 }
 
-/** Uploaded images are stored on local disk (./uploads) and served at /uploads/*. */
+/** Images are kept in memory, validated, then handed to StorageService (disk or Cloudinary). */
 const photoUpload = FileInterceptor('file', {
-  storage: diskStorage({
-    destination: './uploads',
-    filename: (_req, file, cb) => cb(null, `${randomUUID()}${extname(file.originalname).toLowerCase()}`),
-  }),
+  storage: memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) =>
     /^image\/(jpeg|png|webp)$/.test(file.mimetype)
@@ -65,7 +61,10 @@ const photoUpload = FileInterceptor('file', {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('PROVIDER')
 export class MyProfileController {
-  constructor(private providers: ProvidersService) {}
+  constructor(
+    private providers: ProvidersService,
+    private storage: StorageService,
+  ) {}
 
   @Get()
   get(@CurrentUser() u: AuthUser) {
@@ -104,9 +103,10 @@ export class MyProfileController {
 
   @Post('photos')
   @UseInterceptors(photoUpload)
-  addPhoto(@CurrentUser() u: AuthUser, @UploadedFile() file?: Express.Multer.File) {
+  async addPhoto(@CurrentUser() u: AuthUser, @UploadedFile() file?: Express.Multer.File) {
     if (!file) throw new BadRequestException('Aucune image reçue');
-    return this.providers.addPhoto(u.sub, `/uploads/${file.filename}`);
+    await this.providers.assertCanAddPhoto(u.sub); // check the 12-photo limit before uploading
+    return this.providers.addPhoto(u.sub, await this.storage.save(file));
   }
 
   @Patch('photos/:id/cover')

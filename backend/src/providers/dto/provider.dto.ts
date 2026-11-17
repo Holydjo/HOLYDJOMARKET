@@ -69,7 +69,8 @@ export class OpeningHoursDto {
 export class SearchQueryDto {
   @IsOptional() @IsString() category?: string; // category slug
   @IsOptional() @IsString() q?: string; // free text: name, service…
-  @IsOptional() @IsString() place?: string; // neighbourhood/city name when no GPS
+  @IsOptional() @IsString() place?: string; // neighbourhood/city/address typed by the user
+  @IsOptional() @IsString() @MaxLength(120) label?: string; // display name of a picked suggestion
   @IsOptional() @Type(() => Number) @IsNumber() lat?: number;
   @IsOptional() @Type(() => Number) @IsNumber() lng?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) radiusKm?: number;

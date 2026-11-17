@@ -20,6 +20,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const { signIn } = useAuth();
   const [role, setRole] = useState<'CUSTOMER' | 'PROVIDER'>(params.get('role') === 'pro' ? 'PROVIDER' : 'CUSTOMER');
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', phone: '' });
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
@@ -29,7 +30,10 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     setError('');
     setBusy(true);
     try {
-      const body = mode === 'login' ? { email: form.email, password: form.password } : { ...form, phone: form.phone || undefined, role };
+      const body =
+        mode === 'login'
+          ? { email: form.email, password: form.password }
+          : { ...form, phone: form.phone || undefined, role, acceptTerms };
       const res = await api.post<{ token: string; user: User }>(`/auth/${mode === 'login' ? 'login' : 'register'}`, body);
       signIn(res.token, res.user);
       const next = params.get('next');
@@ -84,7 +88,19 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
             <label className="label" htmlFor="pw">Mot de passe</label>
             <input id="pw" type="password" required minLength={mode === 'register' ? 8 : undefined} className="input" value={form.password} onChange={set('password')} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
             {mode === 'register' && <p className="hint">8 caractères minimum.</p>}
+            {mode === 'login' && (
+              <Link href="/mot-de-passe-oublie" className="mt-2 inline-block text-xs font-semibold text-primary">Mot de passe oublié ?</Link>
+            )}
           </div>
+          {mode === 'register' && (
+            <label className="flex items-start gap-3 text-sm">
+              <input type="checkbox" required checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary)]" />
+              <span className="text-muted">
+                J’accepte les <Link href="/conditions" target="_blank" className="font-semibold text-ink underline">conditions d’utilisation</Link> et la{' '}
+                <Link href="/confidentialite" target="_blank" className="font-semibold text-ink underline">politique de confidentialité</Link>.
+              </span>
+            </label>
+          )}
           {error && <Alert>{error}</Alert>}
           <button className="btn-primary w-full" disabled={busy}>
             {busy ? '…' : mode === 'login' ? 'Se connecter' : role === 'PROVIDER' ? 'Créer mon compte pro' : 'Créer mon compte'}

@@ -97,7 +97,11 @@ export default function ProfilePage() {
                   <div>
                     <p className="font-semibold">{MODE_LABEL[m].label}</p>
                     <p className="text-xs text-muted">
-                      {m === 'travels' ? `Jusqu’à ${p.travelRadiusKm} km autour de ${p.neighbourhood ?? p.city}` : p.address ?? `${p.neighbourhood ?? ''} ${p.city}`}
+                      {m === 'travels'
+                        ? `Jusqu’à ${p.travelRadiusKm} km autour de ${p.neighbourhood ?? p.city}`
+                        : m === 'atHome' && !(p.inSalon || p.inShop)
+                          ? `${p.neighbourhood ?? p.city} — adresse exacte communiquée après confirmation`
+                          : p.address ?? `${p.neighbourhood ?? ''} ${p.city}`}
                     </p>
                   </div>
                 </div>
