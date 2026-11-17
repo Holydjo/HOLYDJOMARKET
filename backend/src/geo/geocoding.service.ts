@@ -87,7 +87,7 @@ export class GeocodingService {
     });
     try {
       const res = await fetch(`${this.url}?${params}`, {
-        headers: { 'User-Agent': 'HOLYDO-MARKET/1.0 (local services marketplace)' },
+        headers: { 'User-Agent': 'HOLYDJO-MARKET/1.0 (local services marketplace)' },
         signal: AbortSignal.timeout(5000),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

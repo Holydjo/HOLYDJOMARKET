@@ -16,7 +16,7 @@ export default function BecomeProvider() {
         <p className="badge mb-4 bg-green-soft text-green">Gratuit pour démarrer</p>
         <h1 className="h-display text-4xl font-extrabold leading-tight md:text-6xl">Votre savoir-faire mérite d’être trouvé.</h1>
         <p className="mt-4 text-lg text-muted">
-          HOLYDO MARKET met en avant les indépendants et les petites entreprises auprès des habitants de leur quartier.
+          HOLYDJO MARKET met en avant les indépendants et les petites entreprises auprès des habitants de leur quartier.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/inscription?role=pro" className="btn-primary">Créer mon profil gratuitement</Link>

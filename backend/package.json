@@ -2,7 +2,7 @@
   "name": "holydo-market-api",
   "version": "0.1.0",
   "private": true,
-  "description": "HOLYDO MARKET — API (NestJS + Prisma + PostgreSQL)",
+  "description": "HOLYDJO MARKET — API (NestJS + Prisma + PostgreSQL)",
   "scripts": {
     "build": "nest build",
     "start": "nest start",

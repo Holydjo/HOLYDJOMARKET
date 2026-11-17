@@ -8,22 +8,12 @@
  */
 import { PrismaClient, ProfileStatus, ProviderKind } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { DEFAULT_CATEGORIES } from '../src/categories/default-categories';
 
 const prisma = new PrismaClient();
 const DEMO_PASSWORD = 'Demo1234!';
 
-const CATEGORIES = [
-  { slug: 'hair', name: 'Coiffure', icon: '💇🏾' },
-  { slug: 'braids', name: 'Tresses', icon: '🪮' },
-  { slug: 'barber', name: 'Barbier', icon: '💈' },
-  { slug: 'beauty', name: 'Esthétique', icon: '✨' },
-  { slug: 'nails', name: 'Ongles', icon: '💅🏽' },
-  { slug: 'makeup', name: 'Maquillage', icon: '💄' },
-  { slug: 'cleaning', name: 'Ménage', icon: '🧽' },
-  { slug: 'repairs', name: 'Réparations', icon: '🛠️' },
-  { slug: 'moving', name: 'Déménagement', icon: '📦' },
-  { slug: 'tailoring', name: 'Couture', icon: '🧵' },
-];
+const CATEGORIES = DEFAULT_CATEGORIES;
 
 type Svc = [category: string, name: string, priceDollars: number, durationMin: number, from?: boolean];
 
@@ -256,7 +246,7 @@ async function main() {
   }
 
   const admin = await prisma.user.create({
-    data: { email: 'admin@holydo.test', password, firstName: 'Admin', lastName: 'Holydo', role: 'ADMIN' },
+    data: { email: 'admin@holydo.test', password, firstName: 'Admin', lastName: 'Holydjo', role: 'ADMIN' },
   });
 
   const customers = await Promise.all(

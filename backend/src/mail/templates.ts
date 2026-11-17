@@ -26,14 +26,14 @@ export function render(b: Block): { html: string; text: string } {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fbf7f1;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" style="max-width:520px;box-sizing:border-box;background:#ffffff;border:1px solid #ebe3d8;border-radius:20px;padding:24px">
 <tr><td>
-<p style="margin:0 0 20px;font-weight:800;font-size:16px;letter-spacing:-.2px">HOLYDO<span style="color:#c8502a"> MARKET</span></p>
+<p style="margin:0 0 20px;font-weight:800;font-size:16px;letter-spacing:-.2px">HOLYDJO<span style="color:#c8502a"> MARKET</span></p>
 <h1 style="margin:0 0 12px;font-size:22px;line-height:1.25">${esc(b.heading)}</h1>
 ${b.lines.map((l) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.5">${esc(l)}</p>`).join('')}
 ${b.quote ? `<p style="margin:12px 0;padding:12px 14px;background:#fbf7f1;border-radius:12px;font-size:14px;font-style:italic">« ${esc(b.quote)} »</p>` : ''}
 ${details}
 ${b.cta ? `<p style="margin:20px 0 4px"><a href="${esc(b.cta.url)}" style="display:inline-block;background:#c8502a;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 22px;border-radius:999px">${esc(b.cta.label)}</a></p>` : ''}
 </td></tr></table>
-<p style="font-size:12px;color:#6d655d;margin:16px 0 0">Vous recevez cet email car vous avez un compte HOLYDO MARKET.</p>
+<p style="font-size:12px;color:#6d655d;margin:16px 0 0">Vous recevez cet email car vous avez un compte HOLYDJO MARKET.</p>
 </td></tr></table></body></html>`;
 
   const text = [

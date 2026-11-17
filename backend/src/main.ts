@@ -29,6 +29,6 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? 4001);
   await app.listen(port);
-  console.log(`HOLYDO MARKET API → http://localhost:${port}`);
+  console.log(`HOLYDJO MARKET API → http://localhost:${port}`);
 }
 void bootstrap();

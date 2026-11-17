@@ -1,6 +1,6 @@
-# HOLYDO MARKET
+# HOLYDJO MARKET
 
-HOLYDO MARKET is a web and mobile platform that connects local small businesses and independent service providers with nearby customers. Customers search for services such as hair, braids, beauty, cleaning and repairs by location, compare provider profiles and request appointments. Providers create a free profile with their services, prices, photos, opening hours and travel area. Each profile is published only after an administrator approves it.
+HOLYDJO MARKET is a web and mobile platform that connects local small businesses and independent service providers with nearby customers. Customers search for services such as hair, braids, beauty, cleaning and repairs by location, compare provider profiles and request appointments. Providers create a free profile with their services, prices, photos, opening hours and travel area. Each profile is published only after an administrator approves it.
 
 The interface is in French. Labels shared across screens live in `frontend/src/lib/labels.ts`; page-specific text is still written in each page.
 

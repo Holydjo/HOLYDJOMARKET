@@ -10,7 +10,7 @@ const display = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-disp
 const body = DM_Sans({ subsets: ['latin'], variable: '--font-body' });
 
 export const metadata: Metadata = {
-  title: { default: 'HOLYDO MARKET — Les pros de votre quartier', template: '%s · HOLYDO MARKET' },
+  title: { default: 'HOLYDJO MARKET — Les pros de votre quartier', template: '%s · HOLYDJO MARKET' },
   description:
     'Trouvez coiffeuses, tresseuses, esthéticiennes, ménage et réparations près de chez vous. Comparez les profils, les prix et réservez.',
   manifest: '/manifest.webmanifest',
