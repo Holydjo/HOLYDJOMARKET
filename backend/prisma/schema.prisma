@@ -59,10 +59,30 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// When the user accepted the terms of use + privacy policy at sign-up.
+  termsAcceptedAt   DateTime?
+  /// Tokens issued before this moment are rejected (set on password reset).
+  passwordChangedAt DateTime?
+
   providerProfile ProviderProfile?
   reviews         Review[]
   appointments    AppointmentRequest[] @relation("CustomerAppointments")
   moderations     ModerationLog[]
+  resetTokens     PasswordResetToken[]
+}
+
+/// One-time "forgot password" links. Only a SHA-256 hash of the token is stored,
+/// so a database leak can't be used to reset accounts.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Category {

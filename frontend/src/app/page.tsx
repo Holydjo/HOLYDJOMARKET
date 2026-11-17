@@ -26,9 +26,12 @@ export default function Home() {
   return (
     <>
       {/* ---------- HERO ---------- */}
-      <section className="relative overflow-hidden">
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-primary-soft blur-2xl md:h-[28rem] md:w-[28rem]" />
-        <div aria-hidden className="pointer-events-none absolute -left-20 top-40 h-60 w-60 rounded-full bg-green-soft blur-2xl" />
+      <section className="relative z-10">
+        {/* Decorative blobs are clipped in their own layer so the search suggestions can overflow the hero. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-primary-soft blur-2xl md:h-[28rem] md:w-[28rem]" />
+          <div className="absolute -left-20 top-40 h-60 w-60 rounded-full bg-green-soft blur-2xl" />
+        </div>
         <div className="container-x relative pb-10 pt-10 md:pb-16 md:pt-20">
           <p className="chip mb-5 border-primary/30 bg-primary-soft text-primary">✦ Profils vérifiés avant publication</p>
           <h1 className="h-display max-w-3xl text-[40px] font-extrabold leading-[1.02] sm:text-6xl md:text-7xl">

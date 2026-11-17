@@ -12,8 +12,10 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { IsDateString, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { AuthUser, CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.decorators';
+import { Notifier } from '../mail/notifier';
 import { PrismaService } from '../prisma/prisma.service';
 
 // -----------------------------------------------------------------------------
@@ -40,9 +42,14 @@ const INCLUDE = {
   customer: { select: { firstName: true, lastName: true, email: true, phone: true } },
 };
 
+const logError = (e: Error) => console.error('[Mail]', e.message);
+
 @Injectable()
 class AppointmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notify: Notifier,
+  ) {}
 
   async create(customerId: string, dto: CreateAppointmentDto) {
     const profile = await this.prisma.providerProfile.findUnique({ where: { id: dto.profileId } });
@@ -53,10 +60,12 @@ class AppointmentsService {
       const s = await this.prisma.service.findUnique({ where: { id: dto.serviceId } });
       if (!s || s.profileId !== profile.id) throw new BadRequestException('Service invalide');
     }
-    return this.prisma.appointmentRequest.create({
+    const created = await this.prisma.appointmentRequest.create({
       data: { ...dto, requestedAt: new Date(dto.requestedAt), customerId },
       include: INCLUDE,
     });
+    void this.notify.appointmentRequested(created.id).catch(logError);
+    return created;
   }
 
   /** Requests the logged-in customer has sent. */
@@ -90,7 +99,11 @@ class AppointmentsService {
     const isProvider = a.profile.userId === user.sub;
     const isCustomer = a.customerId === user.sub;
     if (dto.status === 'CANCELLED' ? !isCustomer : !isProvider) throw new ForbiddenException();
-    return this.prisma.appointmentRequest.update({ where: { id }, data: dto, include: INCLUDE });
+    // Only pending requests can be answered or cancelled (avoids duplicate emails and flip-flopping).
+    if (a.status !== 'PENDING') throw new BadRequestException('Cette demande a déjà été traitée');
+    const updated = await this.prisma.appointmentRequest.update({ where: { id }, data: dto, include: INCLUDE });
+    void (dto.status === 'CANCELLED' ? this.notify.appointmentCancelled(id) : this.notify.appointmentAnswered(id)).catch(logError);
+    return updated;
   }
 }
 
@@ -100,6 +113,7 @@ class AppointmentsController {
   constructor(private svc: AppointmentsService) {}
 
   @Post()
+  @Throttle({ default: { ttl: 60 * 60_000, limit: 20 } }) // anti-spam: 20 requests / hour
   create(@CurrentUser() u: AuthUser, @Body() dto: CreateAppointmentDto) {
     return this.svc.create(u.sub, dto);
   }

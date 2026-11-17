@@ -10,7 +10,10 @@
     "start:prod": "node dist/main",
     "db:push": "prisma db push",
     "db:seed": "ts-node prisma/seed.ts",
-    "db:reset": "prisma db push --force-reset && ts-node prisma/seed.ts"
+    "db:reset": "prisma migrate reset --force --skip-seed && ts-node prisma/seed.ts",
+    "db:migrate": "prisma migrate deploy",
+    "db:migration": "prisma migrate dev",
+    "db:create-admin": "ts-node prisma/create-admin.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -21,11 +24,14 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/serve-static": "^5.0.3",
+    "@nestjs/throttler": "^6.8.0",
     "@prisma/client": "^5.22.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "helmet": "^8.3.0",
     "multer": "^2.0.2",
+    "nodemailer": "^10.6.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
@@ -37,9 +43,13 @@
     "@types/express": "^5.0.0",
     "@types/multer": "^2.0.0",
     "@types/node": "^22.10.7",
+    "@types/nodemailer": "^8.0.2",
     "@types/passport-jwt": "^4.0.1",
     "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

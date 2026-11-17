@@ -7,6 +7,10 @@ export type Mode = 'atHome' | 'inSalon' | 'inShop' | 'travels';
 
 export interface User { id: string; email: string; firstName: string; lastName: string; phone?: string | null; role: Role }
 export interface Category { id: string; slug: string; name: string; icon: string }
+export interface GeoResult {
+  label: string; name: string; neighbourhood: string | null; city: string | null;
+  lat: number; lng: number; kind: 'address' | 'street' | 'district' | 'city' | 'other';
+}
 export interface Place { name: string; city: string; lat: number; lng: number }
 
 export interface Service {

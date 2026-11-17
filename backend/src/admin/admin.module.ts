@@ -14,6 +14,7 @@ import {
 import { ProfileStatus } from '@prisma/client';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import { AuthUser, CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.decorators';
+import { Notifier } from '../mail/notifier';
 import { PrismaService } from '../prisma/prisma.service';
 
 class RejectDto {
@@ -32,7 +33,10 @@ class RejectDto {
  */
 @Injectable()
 class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notify: Notifier,
+  ) {}
 
   async stats() {
     const grouped = await this.prisma.providerProfile.groupBy({ by: ['status'], _count: true });
@@ -74,6 +78,7 @@ class AdminService {
       }),
       this.prisma.moderationLog.create({ data: { profileId, adminId, action, reason } }),
     ]);
+    void this.notify.profileDecision(profileId).catch((e: Error) => console.error('[Mail]', e.message));
     return updated;
   }
 }

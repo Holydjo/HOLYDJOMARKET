@@ -3,7 +3,14 @@
  * - Adds the JWT stored at login.
  * - Turns API errors into `Error(message)` so pages can show them directly.
  */
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4001';
+/**
+ * API base URL. When NEXT_PUBLIC_API_URL isn't set (local dev), use the same
+ * host the page was opened from, on port 4001 — so the app also works from a
+ * phone on the same Wi-Fi (http://<mac-ip>:4000 → http://<mac-ip>:4001).
+ */
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:4001` : 'http://localhost:4001');
 const TOKEN_KEY = 'holydo_token';
 
 export const tokenStore = {
