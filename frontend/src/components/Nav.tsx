@@ -29,6 +29,9 @@ export function Header() {
               {user.role === 'ADMIN' ? 'Modération' : user.role === 'PROVIDER' ? 'Mon tableau de bord' : 'Mes demandes'}
             </Link>
           )}
+          {user?.role === 'PROVIDER' && (
+            <Link href="/compte" className="rounded-full px-3 py-2 hover:bg-line/60">Mes réservations</Link>
+          )}
         </nav>
         <div className="flex items-center gap-2">
           {user ? (

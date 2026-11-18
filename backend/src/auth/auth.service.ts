@@ -79,6 +79,20 @@ export class AuthService {
     return this.session(user);
   }
 
+  /**
+   * "Devenir prestataire" for someone who already has a customer account:
+   * same email and password, past bookings kept. Returns a fresh token so the
+   * new role takes effect immediately. Admin accounts can't switch.
+   */
+  async becomeProvider(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+    if (user.role === 'ADMIN') throw new BadRequestException('Un compte administrateur ne peut pas devenir prestataire');
+    const updated =
+      user.role === 'PROVIDER' ? user : await this.prisma.user.update({ where: { id: userId }, data: { role: 'PROVIDER' } });
+    return this.session(updated);
+  }
+
   async me(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException();

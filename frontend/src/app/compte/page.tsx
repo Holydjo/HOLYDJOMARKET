@@ -16,7 +16,8 @@ import type { Appointment } from '@/lib/types';
 
 export default function AccountPage() {
   return (
-    <RequireRole role="CUSTOMER">
+    // Providers can also book other pros, so they keep access to their own requests.
+    <RequireRole role={['CUSTOMER', 'PROVIDER']}>
       <MyRequests />
     </RequireRole>
   );
@@ -37,8 +38,12 @@ function MyRequests() {
 
   return (
     <div className="container-x max-w-3xl py-8">
-      <h1 className="h-display text-3xl font-extrabold">Mes demandes</h1>
-      <p className="mt-1 text-sm text-muted">Bonjour {user?.firstName}, retrouvez ici vos demandes de rendez-vous.</p>
+      <h1 className="h-display text-3xl font-extrabold">{user?.role === 'PROVIDER' ? 'Mes réservations' : 'Mes demandes'}</h1>
+      <p className="mt-1 text-sm text-muted">
+        {user?.role === 'PROVIDER'
+          ? 'Les rendez-vous que vous avez demandés à d’autres pros, en tant que client·e. Les demandes reçues de vos clients sont dans votre tableau de bord.'
+          : `Bonjour ${user?.firstName}, retrouvez ici vos demandes de rendez-vous.`}
+      </p>
       {error && <div className="mt-4"><Alert>{error}</Alert></div>}
       <div className="mt-6 space-y-3">
         {!items && <Spinner />}

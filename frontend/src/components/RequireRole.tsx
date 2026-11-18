@@ -7,14 +7,17 @@ import type { Role } from '@/lib/types';
 import { homeFor, useAuth } from './AuthProvider';
 import { Spinner } from './ui';
 
-export function RequireRole({ role, children }: { role: Role; children: React.ReactNode }) {
+/** `role` can be one role or a list of allowed roles. */
+export function RequireRole({ role, children }: { role: Role | Role[]; children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const allowed = Array.isArray(role) ? role : [role];
+  const ok = !!user && allowed.includes(user.role);
   useEffect(() => {
     if (loading) return;
     if (!user) router.replace(`/connexion?next=${encodeURIComponent(location.pathname)}`);
-    else if (user.role !== role) router.replace(homeFor(user));
-  }, [user, loading, role, router]);
-  if (loading || !user || user.role !== role) return <Spinner />;
+    else if (!ok) router.replace(homeFor(user));
+  }, [user, loading, ok, router]);
+  if (loading || !ok) return <Spinner />;
   return <>{children}</>;
 }
