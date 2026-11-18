@@ -35,6 +35,11 @@ export class MailService {
     if (!this.transport) this.log.warn('SMTP_URL not set — emails will be printed to the console');
   }
 
+  /** For the admin diagnostic: which mode is active and from which sender (never the password). */
+  info() {
+    return { mode: this.transport ? ('smtp' as const) : ('console' as const), from: this.from };
+  }
+
   /** Fire-and-forget: returns immediately, logs failures. */
   queue(email: Email) {
     void this.send(email).catch((e) => this.log.error(`Failed to send "${email.subject}": ${e.message}`));
@@ -48,5 +53,6 @@ export class MailService {
       return;
     }
     await this.transport.sendMail({ from: this.from, to, subject: email.subject, html: email.html, text: email.text });
+    this.log.log(`Sent "${email.subject}" to ${to.join(', ')}`);
   }
 }

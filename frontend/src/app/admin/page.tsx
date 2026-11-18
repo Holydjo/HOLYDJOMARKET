@@ -9,6 +9,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { CategoryReview } from '@/components/admin/CategoryReview';
+import { EmailTest } from '@/components/admin/EmailTest';
 import { RequireRole } from '@/components/RequireRole';
 import { Alert, Cover, Empty, Spinner } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -65,6 +66,8 @@ function Moderation() {
           </div>
         ))}
       </div>
+
+      <EmailTest />
 
       <div className="-mx-4 mt-6 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         {QUEUES.map((s) => (

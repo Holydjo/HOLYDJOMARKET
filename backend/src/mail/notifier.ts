@@ -152,6 +152,37 @@ export class Notifier {
     });
   }
 
+  /**
+   * Admin diagnostic: sends a test email *synchronously* and reports what
+   * happened, with an explanation of the most common SMTP problems.
+   */
+  async testEmail(to: string) {
+    const info = this.mail.info();
+    if (info.mode === 'console') {
+      return {
+        ok: false,
+        ...info,
+        problem: 'SMTP_URL n’est pas configuré sur le serveur : les emails sont seulement écrits dans les journaux (Logs) de l’API, aucun n’est envoyé.',
+        fix: 'Dans Render → holydo-api → Environment, ajoutez SMTP_URL (ex. smtps://resend:VOTRE_CLE_API@smtp.resend.com:465) et MAIL_FROM, puis enregistrez.',
+      };
+    }
+    try {
+      await this.mail.send({
+        to,
+        subject: 'Test d’envoi — HOLYDJO MARKET',
+        ...render({
+          heading: 'Les emails fonctionnent ✅',
+          lines: ['Si vous lisez ce message, HOLYDJO MARKET peut envoyer des emails depuis votre serveur.', `Expéditeur utilisé : ${info.from}`],
+          cta: { label: 'Ouvrir la modération', url: `${this.appUrl}/admin` },
+        }),
+      });
+      return { ok: true, ...info, to, problem: null, fix: 'Vérifiez votre boîte de réception, et le dossier Courrier indésirable / Spam.' };
+    } catch (e) {
+      const message = (e as Error).message ?? String(e);
+      return { ok: false, ...info, to, problem: message, fix: explainSmtpError(message) };
+    }
+  }
+
   // ---------------------------------------------------------------------------
 
   private send(to: string | string[], subject: string, block: Parameters<typeof render>[0]) {
@@ -168,4 +199,20 @@ export class Notifier {
       },
     });
   }
+}
+
+/** Plain-language hints for the errors SMTP providers (Resend first) usually return. */
+function explainSmtpError(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes('testing emails') || m.includes('own email') || m.includes('verify a domain'))
+    return 'Resend est en mode test : avec l’expéditeur onboarding@resend.dev, il n’envoie qu’à l’adresse email de votre compte Resend. Utilisez cette adresse pour votre compte admin, ou vérifiez votre propre domaine dans Resend (Domains) et changez MAIL_FROM.';
+  if (m.includes('domain') && (m.includes('not verified') || m.includes('verify')))
+    return 'Le domaine de MAIL_FROM n’est pas vérifié chez votre fournisseur d’emails. Vérifiez-le (Resend → Domains) ou utilisez onboarding@resend.dev pour tester.';
+  if (m.includes('invalid login') || m.includes('auth') || m.includes('535') || m.includes('api key'))
+    return 'Identifiants SMTP refusés : la clé API dans SMTP_URL est fausse ou supprimée. Format Resend : smtps://resend:VOTRE_CLE_API@smtp.resend.com:465';
+  if (m.includes('from') && (m.includes('invalid') || m.includes('format')))
+    return 'MAIL_FROM est mal formé. Exemple valide : HOLYDJO MARKET <onboarding@resend.dev>';
+  if (m.includes('enotfound') || m.includes('econnrefused') || m.includes('timeout') || m.includes('etimedout'))
+    return 'Impossible de joindre le serveur SMTP : vérifiez l’adresse et le port dans SMTP_URL (Resend : smtp.resend.com, port 465 avec smtps://).';
+  return 'Vérifiez SMTP_URL et MAIL_FROM dans Render → holydo-api → Environment. Le message ci-dessus vient directement du fournisseur d’emails.';
 }
