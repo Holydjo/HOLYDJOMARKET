@@ -282,11 +282,13 @@ export class ProvidersService {
 
   async addService(userId: string, dto: ServiceDto) {
     const p = await this.requireMine(userId);
+    await this.requireCategory(dto.categoryId);
     return this.prisma.service.create({ data: { ...dto, profileId: p.id }, include: { category: true } });
   }
 
   async updateService(userId: string, serviceId: string, dto: Partial<ServiceDto>) {
     await this.requireOwnedService(userId, serviceId);
+    if (dto.categoryId) await this.requireCategory(dto.categoryId);
     return this.prisma.service.update({ where: { id: serviceId }, data: dto, include: { category: true } });
   }
 
@@ -364,6 +366,12 @@ export class ProvidersService {
     const p = await this.prisma.providerProfile.findUnique({ where: { userId } });
     if (!p) throw new NotFoundException("Créez d'abord votre profil");
     return p;
+  }
+
+  private async requireCategory(id: string) {
+    if (!(await this.prisma.category.findUnique({ where: { id }, select: { id: true } }))) {
+      throw new BadRequestException('Catégorie introuvable. Rechargez la page et choisissez-en une autre.');
+    }
   }
 
   private async requireOwnedService(userId: string, serviceId: string) {

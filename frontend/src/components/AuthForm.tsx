@@ -17,7 +17,7 @@ import { Alert } from './ui';
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const params = useSearchParams();
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { user, signIn } = useAuth();
   const [role, setRole] = useState<'CUSTOMER' | 'PROVIDER'>(params.get('role') === 'pro' ? 'PROVIDER' : 'CUSTOMER');
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', phone: '' });
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -46,6 +46,21 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   }
 
   const nextQs = params.get('next') ? `?next=${encodeURIComponent(params.get('next')!)}` : '';
+
+  // Already logged in: creating a second account with the same email is impossible.
+  if (user) {
+    return (
+      <div className="container-x flex justify-center py-10 md:py-16">
+        <div className="card w-full max-w-md space-y-4 p-6 text-center">
+          <p className="font-semibold">Vous êtes déjà connecté·e ({user.email}).</p>
+          {user.role === 'CUSTOMER' && (
+            <Link href="/devenir-pro" className="btn-primary w-full">Passer mon compte en prestataire</Link>
+          )}
+          <Link href={homeFor(user)} className="btn-ghost w-full">Aller à mon espace</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container-x flex justify-center py-10 md:py-16">

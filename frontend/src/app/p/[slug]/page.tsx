@@ -186,10 +186,11 @@ export default function ProfilePage() {
             </div>
             {p.isPreview ? (
               <p className="mt-3 text-sm text-muted">Les réservations seront ouvertes après la validation du profil.</p>
-            ) : user?.role === 'CUSTOMER' ? (
+            ) : user?.role === 'CUSTOMER' || (user?.role === 'PROVIDER' && !p.isPreview) ? (
+              // Providers may book other pros too (the API refuses booking yourself).
               <BookingForm profile={p} preselect={preselect} key={preselect} />
             ) : user ? (
-              <p className="mt-3 text-sm text-muted">Connectez-vous avec un compte client pour réserver.</p>
+              <p className="mt-3 text-sm text-muted">Un compte administrateur ne peut pas réserver.</p>
             ) : (
               <div className="mt-3 space-y-3 text-sm">
                 <p className="text-muted">Créez un compte client gratuit (30 secondes) pour envoyer votre demande.</p>

@@ -6,6 +6,7 @@
  * "Profil" step; once the profile exists, the other tabs unlock and the
  * overview shows a checklist + the "Soumettre pour validation" button.
  */
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { RequireRole } from '@/components/RequireRole';
 import { Overview } from '@/components/dashboard/Overview';
@@ -73,7 +74,10 @@ function Dashboard() {
           <p className="text-sm text-muted">Mon activité</p>
           <h1 className="h-display text-2xl font-extrabold md:text-3xl">{profile.displayName}</h1>
         </div>
-        <span className={`badge ${status.tone} text-xs`}>{status.label}</span>
+        <div className="flex items-center gap-2">
+          <Link href="/compte" className="text-xs font-semibold text-primary">Mes réservations →</Link>
+          <span className={`badge ${status.tone} text-xs`}>{status.label}</span>
+        </div>
       </div>
 
       <div className="mt-5 grid gap-6 md:grid-cols-[200px_1fr]">

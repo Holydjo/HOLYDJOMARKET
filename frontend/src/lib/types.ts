@@ -6,7 +6,7 @@ export type AppointmentStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED
 export type Mode = 'atHome' | 'inSalon' | 'inShop' | 'travels';
 
 export interface User { id: string; email: string; firstName: string; lastName: string; phone?: string | null; role: Role }
-export interface Category { id: string; slug: string; name: string; icon: string }
+export interface Category { id: string; slug: string; name: string; icon: string; status?: 'APPROVED' | 'PENDING' }
 export interface GeoResult {
   label: string; name: string; neighbourhood: string | null; city: string | null;
   lat: number; lng: number; kind: 'address' | 'street' | 'district' | 'city' | 'other';

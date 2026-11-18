@@ -8,6 +8,7 @@
  */
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { CategoryReview } from '@/components/admin/CategoryReview';
 import { RequireRole } from '@/components/RequireRole';
 import { Alert, Cover, Empty, Spinner } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -18,7 +19,7 @@ type AdminProfile = ProviderProfile & {
   user: { email: string; firstName: string; lastName: string; phone?: string | null; createdAt: string };
   moderation: { id: string; action: ProfileStatus; reason?: string | null; createdAt: string; admin: { firstName: string } }[];
 };
-interface Stats { byStatus: Partial<Record<ProfileStatus, number>>; customers: number; appointments: number }
+interface Stats { byStatus: Partial<Record<ProfileStatus, number>>; customers: number; appointments: number; pendingCategories: number }
 
 const QUEUES: ProfileStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'DRAFT'];
 
@@ -32,6 +33,8 @@ export default function AdminPage() {
 
 function Moderation() {
   const [status, setStatus] = useState<ProfileStatus>('PENDING');
+  // Second view on the same page: categories proposed by providers.
+  const [view, setView] = useState<'profiles' | 'categories'>('profiles');
   // Each list remembers which queue it belongs to (avoids resetting state inside the effect).
   const [list, setList] = useState<{ status: ProfileStatus; items: AdminProfile[] } | null>(null);
   const items = list?.status === status ? list.items : null;
@@ -65,18 +68,38 @@ function Moderation() {
 
       <div className="-mx-4 mt-6 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         {QUEUES.map((s) => (
-          <button key={s} onClick={() => setStatus(s)} className={`chip ${status === s ? 'chip-on' : ''}`}>
+          <button
+            key={s}
+            onClick={() => {
+              setView('profiles');
+              setStatus(s);
+            }}
+            className={`chip ${view === 'profiles' && status === s ? 'chip-on' : ''}`}
+          >
             {PROFILE_STATUS[s].label} {stats?.byStatus[s] ? `(${stats.byStatus[s]})` : ''}
           </button>
         ))}
+        <span className="mx-1 w-px shrink-0 bg-line" />
+        <button onClick={() => setView('categories')} className={`chip ${view === 'categories' ? 'chip-on' : ''}`}>
+          🏷️ Catégories proposées
+          {stats?.pendingCategories ? <span className="badge ml-1 bg-primary px-1.5 py-0 text-white">{stats.pendingCategories}</span> : null}
+        </button>
       </div>
 
-      {error && <div className="mt-4"><Alert>{error}</Alert></div>}
-      <div className="mt-4 space-y-4">
-        {!items && <Spinner />}
-        {items?.length === 0 && <Empty icon="✅" title="Rien à traiter ici">La file est vide.</Empty>}
-        {items?.map((p) => <ReviewCard key={p.id} p={p} onDone={load} />)}
-      </div>
+      {view === 'categories' ? (
+        <div className="mt-4">
+          <CategoryReview onChange={load} />
+        </div>
+      ) : (
+        <>
+          {error && <div className="mt-4"><Alert>{error}</Alert></div>}
+          <div className="mt-4 space-y-4">
+            {!items && <Spinner />}
+            {items?.length === 0 && <Empty icon="✅" title="Rien à traiter ici">La file est vide.</Empty>}
+            {items?.map((p) => <ReviewCard key={p.id} p={p} onDone={load} />)}
+          </div>
+        </>
+      )}
     </div>
   );
 }

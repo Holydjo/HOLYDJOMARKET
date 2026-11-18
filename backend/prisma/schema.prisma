@@ -69,6 +69,7 @@ model User {
   appointments    AppointmentRequest[] @relation("CustomerAppointments")
   moderations     ModerationLog[]
   resetTokens     PasswordResetToken[]
+  proposedCategories Category[] @relation("ProposedCategories")
 }
 
 /// One-time "forgot password" links. Only a SHA-256 hash of the token is stored,
@@ -85,13 +86,29 @@ model PasswordResetToken {
   @@index([userId])
 }
 
+/// APPROVED categories are public (home tiles, search menu).
+/// PENDING ones were proposed by a provider: usable by providers right away,
+/// shown publicly only after an admin approves them.
+enum CategoryStatus {
+  APPROVED
+  PENDING
+}
+
 model Category {
-  id       String    @id @default(uuid())
-  slug     String    @unique // "hair", "braids"… used in URLs
+  id       String         @id @default(uuid())
+  slug     String         @unique // "hair", "braids"… used in URLs
   name     String
   icon     String // emoji used in the UI; cheap and works everywhere
-  order    Int       @default(0)
+  order    Int            @default(0)
+  status   CategoryStatus @default(APPROVED)
   services Service[]
+
+  /// Provider who proposed it (null for the built-in categories).
+  proposedById String?
+  proposedBy   User?    @relation("ProposedCategories", fields: [proposedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  @@index([status])
 }
 
 model ProviderProfile {

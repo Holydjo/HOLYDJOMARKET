@@ -4,14 +4,13 @@
 import { useState } from 'react';
 import { Alert, Empty } from '@/components/ui';
 import { api } from '@/lib/api';
-import { useCategories } from '@/lib/hooks';
 import { duration, money } from '@/lib/labels';
 import type { ProviderProfile, Service } from '@/lib/types';
+import { CategoryPicker } from './CategoryPicker';
 
 const blank = { categoryId: '', name: '', description: '', price: '', priceFrom: false, durationMin: '' };
 
 export function ServicesEditor({ profile, onChange }: { profile: ProviderProfile; onChange: () => void }) {
-  const cats = useCategories();
   const [editing, setEditing] = useState<string | 'new' | null>(profile.services.length ? null : 'new');
   const [f, setF] = useState(blank);
   const [error, setError] = useState('');
@@ -33,6 +32,7 @@ export function ServicesEditor({ profile, onChange }: { profile: ProviderProfile
       priceFrom: f.priceFrom,
       durationMin: f.durationMin ? Number(f.durationMin) : undefined,
     };
+    if (!body.categoryId) return setError('Choisissez une catégorie, ou ajoutez-en une avec « Autre catégorie… ».');
     if (Number.isNaN(body.priceCents)) return setError('Prix invalide');
     try {
       if (editing === 'new') await api.post('/me/profile/services', body);
@@ -64,13 +64,7 @@ export function ServicesEditor({ profile, onChange }: { profile: ProviderProfile
       {editing && (
         <form onSubmit={save} className="card space-y-3 p-5">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="label" htmlFor="cat">Catégorie</label>
-              <select id="cat" required className="input" value={f.categoryId} onChange={(e) => setF({ ...f, categoryId: e.target.value })}>
-                <option value="">Choisir…</option>
-                {cats.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-              </select>
-            </div>
+            <CategoryPicker value={f.categoryId} onChange={(id) => setF((s) => ({ ...s, categoryId: id }))} />
             <div>
               <label className="label" htmlFor="sn">Nom du service</label>
               <input id="sn" required minLength={2} className="input" placeholder="ex. Knotless braids mi-dos" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />

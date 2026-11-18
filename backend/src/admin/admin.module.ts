@@ -41,11 +41,12 @@ class AdminService {
   async stats() {
     const grouped = await this.prisma.providerProfile.groupBy({ by: ['status'], _count: true });
     const byStatus = Object.fromEntries(grouped.map((g) => [g.status, g._count]));
-    const [customers, appointments] = await Promise.all([
+    const [customers, appointments, pendingCategories] = await Promise.all([
       this.prisma.user.count({ where: { role: 'CUSTOMER' } }),
       this.prisma.appointmentRequest.count(),
+      this.prisma.category.count({ where: { status: 'PENDING' } }),
     ]);
-    return { byStatus, customers, appointments };
+    return { byStatus, customers, appointments, pendingCategories };
   }
 
   list(status: ProfileStatus) {

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { BecomeProviderCta } from '@/components/BecomeProviderCta';
 
 export const metadata = { title: 'Devenir prestataire' };
 
@@ -18,10 +18,7 @@ export default function BecomeProvider() {
         <p className="mt-4 text-lg text-muted">
           HOLYDJO MARKET met en avant les indépendants et les petites entreprises auprès des habitants de leur quartier.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/inscription?role=pro" className="btn-primary">Créer mon profil gratuitement</Link>
-          <Link href="/connexion" className="btn-ghost">J’ai déjà un compte</Link>
-        </div>
+        <BecomeProviderCta />
       </div>
       <ol className="mt-14 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((s, i) => (

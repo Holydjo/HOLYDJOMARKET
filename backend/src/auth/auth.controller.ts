@@ -33,6 +33,13 @@ export class AuthController {
     return this.auth.resetPassword(dto);
   }
 
+  /** A logged-in customer turns their account into a provider account. */
+  @Post('become-provider')
+  @UseGuards(JwtAuthGuard)
+  becomeProvider(@CurrentUser() user: AuthUser) {
+    return this.auth.becomeProvider(user.sub);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: AuthUser) {

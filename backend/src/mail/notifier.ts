@@ -17,6 +17,7 @@ import { fmtDate, fmtMoney, render } from './templates';
  *   appointment accepted/declined  customer
  *   appointment cancelled          provider
  *   profile submitted for review   all admins
+ *   new category proposed          all admins
  *   profile approved / rejected    provider
  */
 @Injectable()
@@ -116,6 +117,23 @@ export class Notifier {
     this.send(admins.map((a) => a.email), `À valider : ${p.displayName}`, {
       heading: 'Un profil attend votre validation',
       lines: [`${p.displayName} (${[p.neighbourhood, p.city].filter(Boolean).join(', ')}) a soumis son profil.`],
+      cta: { label: 'Ouvrir la modération', url: `${this.appUrl}/admin` },
+    });
+  }
+
+  async categoryProposed(categoryId: string) {
+    const [c, admins] = await Promise.all([
+      this.prisma.category.findUnique({ where: { id: categoryId }, include: { proposedBy: { include: { providerProfile: true } } } }),
+      this.prisma.user.findMany({ where: { role: 'ADMIN' }, select: { email: true } }),
+    ]);
+    if (!c || !admins.length) return;
+    const who = c.proposedBy?.providerProfile?.displayName ?? c.proposedBy?.firstName ?? 'Un prestataire';
+    this.send(admins.map((a) => a.email), `Nouvelle catégorie proposée : ${c.name}`, {
+      heading: 'Une catégorie attend votre validation',
+      lines: [
+        `${who} a proposé la catégorie « ${c.name} ».`,
+        'Approuvez-la (vous pouvez corriger son nom et son icône) pour l’afficher publiquement, ou fusionnez-la avec une catégorie existante.',
+      ],
       cta: { label: 'Ouvrir la modération', url: `${this.appUrl}/admin` },
     });
   }
