@@ -88,7 +88,16 @@ class AdminService {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 class AdminController {
-  constructor(private svc: AdminService) {}
+  constructor(
+    private svc: AdminService,
+    private notify: Notifier,
+  ) {}
+
+  /** Sends a test email to the logged-in admin and explains any failure. */
+  @Post('test-email')
+  testEmail(@CurrentUser() u: AuthUser) {
+    return this.notify.testEmail(u.email);
+  }
 
   @Get('stats')
   stats() {
