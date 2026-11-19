@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { api } from './api';
+import { rememberPosition } from './region';
 import type { Category, Place } from './types';
 
 /** Reference data is tiny and rarely changes: fetch once per page load and share. */
@@ -37,7 +38,11 @@ export function getPosition(): Promise<{ lat: number; lng: number }> {
     }
     if (!navigator.geolocation) return reject(new Error("La localisation n'est pas disponible sur ce navigateur. Tapez votre quartier."));
     navigator.geolocation.getCurrentPosition(
-      (p) => resolve({ lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5) }),
+      (p) => {
+        const pos = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5) };
+        rememberPosition(pos); // later address suggestions favour this area
+        resolve(pos);
+      },
       (err) => reject(new Error(GEO_ERRORS[err.code] ?? GEO_ERRORS[2])),
       { enableHighAccuracy: false, timeout: 15_000, maximumAge: 300_000 },
     );

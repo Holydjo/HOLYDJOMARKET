@@ -71,6 +71,9 @@ export class SearchQueryDto {
   @IsOptional() @IsString() q?: string; // free text: name, service…
   @IsOptional() @IsString() place?: string; // neighbourhood/city/address typed by the user
   @IsOptional() @IsString() @MaxLength(120) label?: string; // display name of a picked suggestion
+  // Where the user probably is, to interpret a typed place ("King Street" in Toronto vs Montréal).
+  @IsOptional() @Type(() => Number) @IsNumber() biasLat?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() biasLng?: number;
   @IsOptional() @Type(() => Number) @IsNumber() lat?: number;
   @IsOptional() @Type(() => Number) @IsNumber() lng?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) radiusKm?: number;
