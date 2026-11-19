@@ -63,13 +63,18 @@ model User {
   termsAcceptedAt   DateTime?
   /// Tokens issued before this moment are rejected (set on password reset).
   passwordChangedAt DateTime?
+  /// Set when the user clicked the link in the "confirm your email" message.
+  /// Unverified accounts can browse but can't book, submit a profile, review or report.
+  emailVerifiedAt   DateTime?
 
   providerProfile ProviderProfile?
   reviews         Review[]
   appointments    AppointmentRequest[] @relation("CustomerAppointments")
   moderations     ModerationLog[]
   resetTokens     PasswordResetToken[]
+  verifyTokens    EmailVerificationToken[]
   proposedCategories Category[] @relation("ProposedCategories")
+  reports            Report[]   @relation("Reports")
 }
 
 /// One-time "forgot password" links. Only a SHA-256 hash of the token is stored,
@@ -248,4 +253,88 @@ model ModerationLog {
   action    ProfileStatus // APPROVED or REJECTED
   reason    String?
   createdAt DateTime        @default(now())
+}
+
+// -----------------------------------------------------------------------------
+// Email outbox: every email is stored first, then sent by a background worker
+// with retries. Nothing is lost if the server restarts or the provider fails.
+// -----------------------------------------------------------------------------
+enum EmailStatus {
+  PENDING // waiting to be sent (or to be retried)
+  SENDING // claimed by the worker
+  SENT
+  FAILED // gave up after the last retry
+}
+
+model EmailOutbox {
+  id            String      @id @default(uuid())
+  to            String[]
+  subject       String
+  html          String
+  text          String
+  status        EmailStatus @default(PENDING)
+  attempts      Int         @default(0)
+  lastError     String?
+  nextAttemptAt DateTime    @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime    @default(now())
+
+  @@index([status, nextAttemptAt])
+  @@index([createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// Reports ("Signaler") on a profile or a review, reviewed by admins.
+// -----------------------------------------------------------------------------
+enum ReportTarget {
+  PROFILE
+  REVIEW
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+}
+
+model Report {
+  id         String       @id @default(uuid())
+  targetType ReportTarget
+  targetId   String // ProviderProfile.id or Review.id (no FK: the target may be deleted)
+  reason     String // short code: fake, offensive, scam, wrong_info, other
+  message    String?
+  reporterId String?
+  reporter   User?        @relation("Reports", fields: [reporterId], references: [id], onDelete: SetNull)
+  status     ReportStatus @default(OPEN)
+  adminNote  String?
+  createdAt  DateTime     @default(now())
+  resolvedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+}
+
+/// One-time "confirm your email" links (only the SHA-256 hash is stored).
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// Failed login attempts, used to slow down password guessing per account
+/// and per IP without blocking people who log in successfully from a shared Wi-Fi.
+/// Stored in the database so restarts don't reset the counters.
+model LoginFailure {
+  id        String   @id @default(uuid())
+  email     String
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
 }

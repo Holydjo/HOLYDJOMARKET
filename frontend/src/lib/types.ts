@@ -5,7 +5,7 @@ export type ProfileStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED';
 export type AppointmentStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED';
 export type Mode = 'atHome' | 'inSalon' | 'inShop' | 'travels';
 
-export interface User { id: string; email: string; firstName: string; lastName: string; phone?: string | null; role: Role }
+export interface User { id: string; email: string; firstName: string; lastName: string; phone?: string | null; role: Role; emailVerified?: boolean }
 export interface Category { id: string; slug: string; name: string; icon: string; status?: 'APPROVED' | 'PENDING' }
 export interface GeoResult {
   label: string; name: string; neighbourhood: string | null; city: string | null;
@@ -39,7 +39,11 @@ export interface SearchResult {
   city: string; neighbourhood?: string | null; latitude: number; longitude: number;
   modes: Record<Mode, boolean>; travelRadiusKm: number; ratingAvg: number; ratingCount: number;
   coverUrl: string | null; categories: Category[]; priceFromCents: number | null;
-  topServices: { name: string; priceCents: number }[]; distanceKm: number | null; comesToYou: boolean;
+  /** Up to 3 services to show on the card, matching the search first. */
+  services: { name: string; priceCents: number; priceFrom: boolean; icon: string }[];
+  /** How many other active services the provider has. */
+  moreServices: number;
+  distanceKm: number | null; comesToYou: boolean;
 }
 export interface SearchResponse {
   center: { lat: number; lng: number; label: string } | null; radiusKm: number; total: number; results: SearchResult[];

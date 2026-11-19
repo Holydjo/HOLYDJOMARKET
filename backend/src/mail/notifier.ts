@@ -11,13 +11,14 @@ import { fmtDate, fmtMoney, render } from './templates';
  *
  *   Event                          Recipient
  *   ─────────────────────────────  ─────────────
- *   account created                the new user
+ *   account created                the new user (welcome + "confirm your email" link)
  *   password reset requested       the user
  *   appointment requested          provider
  *   appointment accepted/declined  customer
  *   appointment cancelled          provider
  *   profile submitted for review   all admins
  *   new category proposed          all admins
+ *   profile / review reported      all admins
  *   profile approved / rejected    provider
  */
 @Injectable()
@@ -43,6 +44,21 @@ export class Notifier {
           ]
         : ['Votre compte est créé. Trouvez les pros de votre quartier et envoyez vos demandes de rendez-vous en quelques secondes.'],
       cta: isPro ? { label: 'Compléter mon profil', url: `${this.appUrl}/dashboard` } : { label: 'Trouver un pro', url: `${this.appUrl}/recherche` },
+    });
+  }
+
+  verifyEmail(user: { email: string; firstName: string; role: string }, token: string) {
+    const isPro = user.role === 'PROVIDER';
+    this.send(user.email, 'Bienvenue sur HOLYDJO MARKET — confirmez votre adresse', {
+      heading: `Bienvenue ${user.firstName} !`,
+      lines: [
+        'Pour activer votre compte, confirmez votre adresse email en cliquant sur le bouton ci-dessous (lien valable 48 h).',
+        isPro
+          ? 'Ensuite, complétez votre profil (services, photos, horaires) et soumettez-le : notre équipe le vérifie en général sous 48 h.'
+          : 'Ensuite, vous pourrez envoyer vos demandes de rendez-vous aux pros de votre quartier.',
+        'Vous n’avez pas créé de compte ? Ignorez simplement ce message.',
+      ],
+      cta: { label: 'Confirmer mon adresse', url: `${this.appUrl}/verifier-email?token=${encodeURIComponent(token)}` },
     });
   }
 
@@ -138,6 +154,24 @@ export class Notifier {
     });
   }
 
+  async reportCreated(reportId: string) {
+    const [r, admins] = await Promise.all([
+      this.prisma.report.findUnique({ where: { id: reportId } }),
+      this.prisma.user.findMany({ where: { role: 'ADMIN' }, select: { email: true } }),
+    ]);
+    if (!r || !admins.length) return;
+    const target =
+      r.targetType === 'PROFILE'
+        ? (await this.prisma.providerProfile.findUnique({ where: { id: r.targetId }, select: { displayName: true } }))?.displayName
+        : 'un avis';
+    this.send(admins.map((a) => a.email), `Signalement : ${target ?? 'élément'}`, {
+      heading: 'Un élément a été signalé',
+      lines: [`${r.targetType === 'PROFILE' ? 'Le profil' : 'Un avis'} ${r.targetType === 'PROFILE' ? `« ${target} »` : ''} a été signalé (raison : ${REASON_FR[r.reason] ?? r.reason}).`],
+      quote: r.message ?? undefined,
+      cta: { label: 'Voir les signalements', url: `${this.appUrl}/admin` },
+    });
+  }
+
   async profileDecision(profileId: string) {
     const p = await this.prisma.providerProfile.findUnique({ where: { id: profileId }, include: { user: true } });
     if (!p || (p.status !== 'APPROVED' && p.status !== 'REJECTED')) return;
@@ -216,3 +250,12 @@ function explainSmtpError(msg: string): string {
     return 'Impossible de joindre le serveur SMTP : vérifiez l’adresse et le port dans SMTP_URL (Resend : smtp.resend.com, port 465 avec smtps://).';
   return 'Vérifiez SMTP_URL et MAIL_FROM dans Render → holydo-api → Environment. Le message ci-dessus vient directement du fournisseur d’emails.';
 }
+
+/** French labels for report reasons (same codes as the website). */
+const REASON_FR: Record<string, string> = {
+  fake: 'faux profil ou faux avis',
+  offensive: 'contenu offensant',
+  scam: 'arnaque ou demande de paiement suspecte',
+  wrong_info: 'informations fausses',
+  other: 'autre',
+};

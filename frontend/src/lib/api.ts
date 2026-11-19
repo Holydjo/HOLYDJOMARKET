@@ -19,7 +19,33 @@ export const tokenStore = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
 
+/**
+ * Slow-response signal (audit H3): when the API takes more than 3.5 s — e.g.
+ * the free Render server waking up — the page shows "Le service se réveille…"
+ * (see components/WakeNotice.tsx) instead of looking frozen.
+ */
+let slowCount = 0;
+const SLOW_MS = 3500;
+function emitSlow(delta: 1 | -1) {
+  slowCount = Math.max(0, slowCount + delta);
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('holydjo:slow', { detail: slowCount }));
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  let flagged = false;
+  const timer = setTimeout(() => {
+    flagged = true;
+    emitSlow(1);
+  }, SLOW_MS);
+  try {
+    return await doRequest<T>(path, init);
+  } finally {
+    clearTimeout(timer);
+    if (flagged) emitSlow(-1);
+  }
+}
+
+async function doRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = tokenStore.get();
   const isForm = init.body instanceof FormData;
   const res = await fetch(`${API_URL}${path}`, {

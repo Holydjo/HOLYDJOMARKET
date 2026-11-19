@@ -9,6 +9,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { CategoryReview } from '@/components/admin/CategoryReview';
+import { AppointmentsAdmin, EmailsAdmin, ReportsAdmin, ReviewsAdmin, UsersAdmin } from '@/components/admin/AdminLists';
 import { EmailTest } from '@/components/admin/EmailTest';
 import { RequireRole } from '@/components/RequireRole';
 import { Alert, Cover, Empty, Spinner } from '@/components/ui';
@@ -20,7 +21,13 @@ type AdminProfile = ProviderProfile & {
   user: { email: string; firstName: string; lastName: string; phone?: string | null; createdAt: string };
   moderation: { id: string; action: ProfileStatus; reason?: string | null; createdAt: string; admin: { firstName: string } }[];
 };
-interface Stats { byStatus: Partial<Record<ProfileStatus, number>>; customers: number; appointments: number; pendingCategories: number }
+interface Stats {
+  byStatus: Partial<Record<ProfileStatus, number>>; customers: number; appointments: number;
+  pendingCategories: number; openReports: number; failedEmails: number;
+}
+
+/** Tabs of the Modération page besides the profile queues. */
+type View = 'profiles' | 'categories' | 'reports' | 'users' | 'reviews' | 'appointments' | 'emails';
 
 const QUEUES: ProfileStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'DRAFT'];
 
@@ -34,8 +41,8 @@ export default function AdminPage() {
 
 function Moderation() {
   const [status, setStatus] = useState<ProfileStatus>('PENDING');
-  // Second view on the same page: categories proposed by providers.
-  const [view, setView] = useState<'profiles' | 'categories'>('profiles');
+  // Other tools on the same page (categories, reports, users…).
+  const [view, setView] = useState<View>('profiles');
   // Each list remembers which queue it belongs to (avoids resetting state inside the effect).
   const [list, setList] = useState<{ status: ProfileStatus; items: AdminProfile[] } | null>(null);
   const items = list?.status === status ? list.items : null;
@@ -83,15 +90,31 @@ function Moderation() {
           </button>
         ))}
         <span className="mx-1 w-px shrink-0 bg-line" />
-        <button onClick={() => setView('categories')} className={`chip ${view === 'categories' ? 'chip-on' : ''}`}>
-          🏷️ Catégories proposées
-          {stats?.pendingCategories ? <span className="badge ml-1 bg-primary px-1.5 py-0 text-white">{stats.pendingCategories}</span> : null}
-        </button>
+        {(
+          [
+            ['categories', '🏷️ Catégories proposées', stats?.pendingCategories],
+            ['reports', '⚑ Signalements', stats?.openReports],
+            ['users', '👥 Utilisateurs', 0],
+            ['reviews', '⭐ Avis', 0],
+            ['appointments', '📅 Rendez-vous', 0],
+            ['emails', '✉️ Emails', stats?.failedEmails],
+          ] as [View, string, number | undefined][]
+        ).map(([v, label, count]) => (
+          <button key={v} onClick={() => setView(v)} className={`chip ${view === v ? 'chip-on' : ''}`}>
+            {label}
+            {count ? <span className={`badge ml-1 px-1.5 py-0 text-white ${v === 'emails' ? 'bg-danger' : 'bg-primary'}`}>{count}</span> : null}
+          </button>
+        ))}
       </div>
 
-      {view === 'categories' ? (
+      {view !== 'profiles' ? (
         <div className="mt-4">
-          <CategoryReview onChange={load} />
+          {view === 'categories' && <CategoryReview onChange={load} />}
+          {view === 'reports' && <ReportsAdmin onChange={load} />}
+          {view === 'users' && <UsersAdmin />}
+          {view === 'reviews' && <ReviewsAdmin />}
+          {view === 'appointments' && <AppointmentsAdmin />}
+          {view === 'emails' && <EmailsAdmin onChange={load} />}
         </div>
       ) : (
         <>
@@ -176,6 +199,12 @@ function ReviewCard({ p, onDone }: { p: AdminProfile; onDone: () => void }) {
         <div className="ml-auto flex gap-2">
           {p.status === 'PENDING' && (
             <button onClick={() => act('approve')} disabled={busy} className="btn btn-sm bg-green text-white">✓ Approuver</button>
+          )}
+          {p.status === 'REJECTED' && (
+            // Puts a suspended (or corrected) profile back online without waiting for a resubmission.
+            <button onClick={() => confirm(`Remettre « ${p.displayName} » en ligne ?`) && act('approve')} disabled={busy} className="btn btn-sm bg-green text-white">
+              ↺ Réactiver
+            </button>
           )}
           {(p.status === 'PENDING' || p.status === 'APPROVED') && !rejecting && (
             <button onClick={() => setRejecting(true)} className="btn-ghost btn-sm text-danger">{p.status === 'APPROVED' ? 'Suspendre' : 'Refuser'}</button>

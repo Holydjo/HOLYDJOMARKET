@@ -48,3 +48,12 @@ export const dateTime = (iso: string, timeZone?: string | null) => {
   const zone = zoneLabelIfDifferent(timeZone);
   return zone ? `${text} (${zone})` : text;
 };
+
+/** Reasons to report a profile or a review (same codes as the API). */
+export const REPORT_REASONS: Record<string, string> = {
+  fake: 'Faux profil ou faux avis',
+  offensive: 'Contenu offensant ou discriminatoire',
+  scam: 'Arnaque ou demande de paiement suspecte',
+  wrong_info: 'Informations fausses (prix, adresse, services…)',
+  other: 'Autre raison',
+};

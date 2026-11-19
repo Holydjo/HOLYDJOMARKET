@@ -12,6 +12,7 @@ import { HealthController } from './health.controller';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProvidersModule } from './providers/providers.module';
+import { ReportsModule } from './reports/reports.module';
 import { ReviewsModule } from './reviews/reviews.module';
 
 /**
@@ -22,7 +23,8 @@ import { ReviewsModule } from './reviews/reviews.module';
  *   appointments  booking requests between customers and providers
  *   reviews       customer ratings
  *   admin         moderation queue for new provider profiles
- *   mail          transactional emails (SMTP, or console in dev)
+ *   mail          transactional emails (outbox + retries; console in dev)
+ *   reports       "Signaler" a profile or a review
  */
 @Module({
   imports: [
@@ -34,7 +36,20 @@ import { ReviewsModule } from './reviews/reviews.module';
       errorMessage: 'Trop de tentatives. Patientez quelques minutes puis réessayez.',
     }),
     // Uploaded photos: ./uploads/<file> → http://api/uploads/<file>
-    ServeStaticModule.forRoot({ rootPath: join(process.cwd(), 'uploads'), serveRoot: '/uploads' }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+      serveStaticOptions: {
+        index: false,
+        dotfiles: 'deny',
+        // Defence in depth (audit H1): a file served from /uploads can never run scripts or be framed.
+        setHeaders: (res) => {
+          res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'none'; sandbox");
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+          res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        },
+      },
+    }),
     PrismaModule,
     MailModule,
     AuthModule,
@@ -42,6 +57,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     ProvidersModule,
     AppointmentsModule,
     ReviewsModule,
+    ReportsModule,
     AdminModule,
   ],
   controllers: [HealthController],

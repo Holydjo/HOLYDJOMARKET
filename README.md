@@ -54,12 +54,17 @@ Every demo account uses the password defined as `DEMO_PASSWORD` in `backend/pris
 
 ## Accounts and security
 
+- **Email verification:** at sign-up, the welcome email contains a link valid for 48 hours. Until it is used, the account can browse but can't book, submit a profile, review, report or propose a category. A banner offers to send the link again. A password reset also confirms the address.
+- **Failed logins only:** 5 failures in 15 minutes lock that account temporarily, and 30 failures in 15 minutes lock the IP address. Successful logins never count, so people sharing a Wi-Fi don't block each other. The counters are stored in the database.
+- **Photo uploads:** the file type is detected from the file's content (JPG, PNG or WEBP); the declared type and the file name are ignored. `/uploads` files are served with a strict CSP (`sandbox`).
+
 - **Forgot password:** `/mot-de-passe-oublie` emails a one-time link, valid for 1 hour. Using it signs out every other session.
-- **Rate limits per IP address:**
-  - login: 10 attempts per 15 minutes
-  - sign-up: 10 per hour
+- **Rate limits per IP address (ceilings):**
+  - login: 100 per 15 minutes (failed logins are limited per account, see above)
+  - sign-up: 30 per hour
   - reset emails: 5 per hour
   - booking requests: 20 per hour
+  - reports: 50 per day per IP and 10 per day per account
   - everything else: 120 per minute
 - **Behind a proxy:** set `TRUST_PROXY=1` only when a reverse proxy sits in front of the API (Render does).
 - **Security headers:** set with Helmet.

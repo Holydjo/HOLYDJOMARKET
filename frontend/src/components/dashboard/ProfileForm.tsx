@@ -64,7 +64,8 @@ export function ProfileForm({ profile, onSaved }: { profile: ProviderProfile | n
     try {
       const saved = await api.put<ProviderProfile>('/me/profile', { ...f, travelRadiusKm: f.travels ? Number(f.travelRadiusKm) : 0 });
       // Keep the coordinates the API resolved, so the next save doesn't geocode again.
-      setF((s) => ({ ...s, latitude: saved.latitude, longitude: saved.longitude, city: saved.city }));
+      // Also show the phone numbers as the API normalised them (514-555-1234).
+      setF((s) => ({ ...s, latitude: saved.latitude, longitude: saved.longitude, city: saved.city, phone: saved.phone ?? '', whatsapp: saved.whatsapp ?? '' }));
       setMsg({ tone: 'success', text: 'Profil enregistré ✓' });
       onSaved();
     } catch (err) {
@@ -102,8 +103,8 @@ export function ProfileForm({ profile, onSaved }: { profile: ProviderProfile | n
           <p className="hint">{f.description.length}/2000 — 30 caractères minimum pour publier.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div><label className="label" htmlFor="tel">Téléphone</label><input id="tel" type="tel" className="input" value={f.phone} onChange={(e) => set('phone', e.target.value)} /></div>
-          <div><label className="label" htmlFor="wa">WhatsApp <span className="text-muted">(facultatif)</span></label><input id="wa" type="tel" className="input" value={f.whatsapp} onChange={(e) => set('whatsapp', e.target.value)} /></div>
+          <div><label className="label" htmlFor="tel">Téléphone</label><input id="tel" type="tel" inputMode="tel" className="input" placeholder="514-555-1234" value={f.phone} onChange={(e) => set('phone', e.target.value)} /></div>
+          <div><label className="label" htmlFor="wa">WhatsApp <span className="text-muted">(facultatif)</span></label><input id="wa" type="tel" inputMode="tel" className="input" placeholder="514-555-1234" value={f.whatsapp} onChange={(e) => set('whatsapp', e.target.value)} /></div>
         </div>
       </div>
 

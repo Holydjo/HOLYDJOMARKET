@@ -3,7 +3,12 @@ import { KIND_LABEL, MODE_LABEL, MODES, money } from '@/lib/labels';
 import type { SearchResult } from '@/lib/types';
 import { Cover, Stars } from './ui';
 
-/** Listing card used in results and on the home page. */
+/**
+ * Listing card used in results and on the home page.
+ * Shows up to 3 services with their price (those matching the search first),
+ * so a customer searching "Ménage" sees the cleaning service even when the
+ * profile's name is about something else.
+ */
 export function ProviderCard({ p, active, onHover }: { p: SearchResult; active?: boolean; onHover?: (id: string | null) => void }) {
   const modes = MODES.filter((m) => p.modes[m]);
   return (
@@ -27,19 +32,36 @@ export function ProviderCard({ p, active, onHover }: { p: SearchResult; active?:
         <p className="mt-0.5 truncate text-xs text-muted">
           {KIND_LABEL[p.kind]} · {p.neighbourhood ?? p.city}
         </p>
-        {p.tagline && <p className="mt-2 line-clamp-2 text-sm">{p.tagline}</p>}
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        {p.tagline && <p className="mt-1.5 line-clamp-1 text-sm text-ink/80">{p.tagline}</p>}
+
+        {p.services.length > 0 && (
+          <ul className="mt-2.5 space-y-1" aria-label="Services">
+            {p.services.map((s, i) => (
+              // On phones only the first 2 fit comfortably; the 3rd appears from the sm breakpoint.
+              <li key={`${s.name}-${i}`} className={`flex items-baseline gap-2 text-sm ${i === 2 ? 'hidden sm:flex' : ''}`}>
+                <span aria-hidden className="shrink-0 text-xs">{s.icon}</span>
+                <span className="min-w-0 flex-1 truncate">{s.name}</span>
+                <span className="shrink-0 font-semibold">
+                  {s.priceFrom && <span className="text-xs font-normal text-muted">dès </span>}
+                  {money(s.priceCents)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {p.moreServices + (p.services.length > 2 ? 1 : 0) > 0 && (
+          <p className="mt-1 text-xs text-muted">
+            {/* phones hide the 3rd service, so it counts as "other" there */}
+            <span className="sm:hidden">+ {p.moreServices + (p.services.length > 2 ? 1 : 0)} autre{p.moreServices + (p.services.length > 2 ? 1 : 0) > 1 ? 's' : ''} service{p.moreServices + (p.services.length > 2 ? 1 : 0) > 1 ? 's' : ''}</span>
+            {p.moreServices > 0 && <span className="hidden sm:inline">+ {p.moreServices} autre{p.moreServices > 1 ? 's' : ''} service{p.moreServices > 1 ? 's' : ''}</span>}
+          </p>
+        )}
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
           {p.comesToYou && <span className="badge bg-green-soft text-green">🚗 Vient chez vous</span>}
           {modes.filter((m) => !(m === 'travels' && p.comesToYou)).slice(0, 2).map((m) => (
             <span key={m} className="badge bg-paper text-muted">{MODE_LABEL[m].icon} {MODE_LABEL[m].short}</span>
           ))}
         </div>
-        {p.priceFromCents != null && (
-          <p className="mt-3 text-sm">
-            <span className="text-muted">À partir de </span>
-            <span className="font-bold">{money(p.priceFromCents)}</span>
-          </p>
-        )}
       </div>
     </Link>
   );

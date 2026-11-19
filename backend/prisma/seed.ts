@@ -246,13 +246,13 @@ async function main() {
   }
 
   const admin = await prisma.user.create({
-    data: { email: 'admin@holydo.test', password, firstName: 'Admin', lastName: 'Holydjo', role: 'ADMIN' },
+    data: { email: 'admin@holydo.test', password, emailVerifiedAt: new Date(), firstName: 'Admin', lastName: 'Holydjo', role: 'ADMIN' },
   });
 
   const customers = await Promise.all(
     [['client', 'Inès', 'Moreau'], ['amina', 'Amina', 'Sow'], ['marc', 'Marc', 'Lefebvre'], ['jade', 'Jade', 'Nguyen']].map(
       ([handle, firstName, lastName]) =>
-        prisma.user.create({ data: { email: `${handle}@holydo.test`, password, firstName, lastName, role: 'CUSTOMER' } }),
+        prisma.user.create({ data: { email: `${handle}@holydo.test`, password, emailVerifiedAt: new Date(), firstName, lastName, role: 'CUSTOMER' } }),
     ),
   );
 
@@ -261,7 +261,7 @@ async function main() {
     const user = await prisma.user.create({
       data: {
         email: `${slugify(p.first)}@holydo.test`,
-        password,
+        password, emailVerifiedAt: new Date(),
         firstName: p.first,
         lastName: p.last,
         role: 'PROVIDER',

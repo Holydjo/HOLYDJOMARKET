@@ -62,6 +62,12 @@ DATABASE_URL="<external URL>" NODE_ENV=production ALLOW_DEMO_SEED=true npm run d
 
 Open the Vercel URL on your phone. It's HTTPS, so **"Autour de moi" (GPS) works** here. To install it like an app, use **Share → Add to Home Screen** (iPhone, Safari) or **⋮ → Add to Home screen** (Android, Chrome).
 
+## Required and recommended settings
+
+- **`CLOUDINARY_URL` is required on Render.** Without it, photos are stored on Render's temporary disk and disappear at the next deploy or restart. The API logs an error at startup when it's missing in production.
+- **Vercel, `NEXT_PUBLIC_SITE_URL` (optional):** the public address of the site, for example `https://holydjomarket.com` once you have a domain. Google links and link previews use it. Without it, the Vercel address is used automatically.
+- **Keeping the API awake (free plan):** `.github/workflows/keep-alive.yml` calls `/health` every 10 minutes so the first visitor doesn't wait about 40 seconds. It is active as soon as it is on `main`; you can check it in the repository's **Actions** tab. Delete it if you move to a paid Render plan, which doesn't sleep.
+
 ## Before inviting real users
 
 - **Legal pages:** fill in `frontend/src/lib/legal.ts` (company, address, privacy officer), have `/conditions` and `/confidentialite` reviewed, then set `LEGAL_REVIEWED = true`.

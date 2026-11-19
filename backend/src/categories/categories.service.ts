@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { slugify } from '../common/geo';
 import { Notifier } from '../mail/notifier';
+import { assertEmailVerified } from '../common/verified';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Accent/case-insensitive comparison: "Esthétique" == "esthetique ". */
@@ -41,6 +42,7 @@ export class CategoriesService {
   }
 
   async propose(userId: string, rawName: string) {
+    await assertEmailVerified(this.prisma, userId);
     const name = tidy(rawName);
     if (name.length < 2 || name.length > 40) throw new BadRequestException('Le nom doit faire entre 2 et 40 caractères');
 

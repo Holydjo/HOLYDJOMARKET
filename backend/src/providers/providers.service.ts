@@ -9,6 +9,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { boundingBox, distanceKm, slugify } from '../common/geo';
 import { timeZoneAt } from '../common/timezone';
+import { assertEmailVerified } from '../common/verified';
 import { findPlace } from '../common/places';
 import { AuthUser } from '../common/auth.decorators';
 import { GeocodingService } from '../geo/geocoding.service';
@@ -131,11 +132,21 @@ export class ProvidersService implements OnModuleInit {
           include: { category: true },
           orderBy: { priceCents: 'asc' },
         },
+        // total active services, for the "+N autres services" line on result cards
+        _count: { select: { services: { where: { isActive: true } } } },
       },
     });
 
+    const needle = q.q?.trim() ? normText(q.q) : null;
+
     let results = rows.map((p) => {
       const d = center ? distanceKm(center.lat, center.lng, p.latitude, p.longitude) : null;
+      // Services shown on the card: those matching the search first (category /
+      // price filter already applied; typed words put first), cheapest first.
+      const matching = needle
+        ? [...p.services].sort((a, b) => Number(normText(b.name).includes(needle)) - Number(normText(a.name).includes(needle)))
+        : p.services;
+      const shown = matching.slice(0, 3);
       return {
         id: p.id,
         slug: p.slug,
@@ -153,7 +164,13 @@ export class ProvidersService implements OnModuleInit {
         coverUrl: p.photos[0]?.url ?? null,
         categories: [...new Map(p.services.map((s) => [s.category.slug, s.category])).values()],
         priceFromCents: p.services[0]?.priceCents ?? null,
-        topServices: p.services.slice(0, 3).map((s) => ({ name: s.name, priceCents: s.priceCents })),
+        services: shown.map((s) => ({
+          name: s.name,
+          priceCents: s.priceCents,
+          priceFrom: s.priceFrom,
+          icon: s.category.icon,
+        })),
+        moreServices: Math.max(0, p._count.services - shown.length),
         distanceKm: d == null ? null : Math.round(d * 10) / 10,
         // true when the provider's travel area covers the customer's location
         comesToYou: d != null && p.travels && d <= p.travelRadiusKm,
@@ -172,6 +189,16 @@ export class ProvidersService implements OnModuleInit {
     });
 
     return { center, radiusKm: radius, total: results.length, results: results.slice(0, 60) };
+  }
+
+  /** Slugs + last update of every published profile (for sitemap.xml). */
+  sitemap() {
+    return this.prisma.providerProfile.findMany({
+      where: { status: 'APPROVED' },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 5000,
+    });
   }
 
   /**
@@ -273,6 +300,7 @@ export class ProvidersService implements OnModuleInit {
 
   /** DRAFT/REJECTED → PENDING, after checking the profile is complete enough. */
   async submitMine(userId: string) {
+    await assertEmailVerified(this.prisma, userId);
     const p = await this.requireMine(userId);
     if (p.status === 'PENDING') return p;
     if (p.status === 'APPROVED') throw new BadRequestException('Profil déjà publié');
@@ -447,3 +475,8 @@ export class ProvidersService implements OnModuleInit {
   }
 }
 
+
+/** Accent/case-insensitive text for matching typed words ("ménage" == "Menage"). */
+function normText(s: string) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
