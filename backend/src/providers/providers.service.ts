@@ -131,11 +131,21 @@ export class ProvidersService implements OnModuleInit {
           include: { category: true },
           orderBy: { priceCents: 'asc' },
         },
+        // total active services, for the "+N autres services" line on result cards
+        _count: { select: { services: { where: { isActive: true } } } },
       },
     });
 
+    const needle = q.q?.trim() ? normText(q.q) : null;
+
     let results = rows.map((p) => {
       const d = center ? distanceKm(center.lat, center.lng, p.latitude, p.longitude) : null;
+      // Services shown on the card: those matching the search first (category /
+      // price filter already applied; typed words put first), cheapest first.
+      const matching = needle
+        ? [...p.services].sort((a, b) => Number(normText(b.name).includes(needle)) - Number(normText(a.name).includes(needle)))
+        : p.services;
+      const shown = matching.slice(0, 3);
       return {
         id: p.id,
         slug: p.slug,
@@ -153,7 +163,13 @@ export class ProvidersService implements OnModuleInit {
         coverUrl: p.photos[0]?.url ?? null,
         categories: [...new Map(p.services.map((s) => [s.category.slug, s.category])).values()],
         priceFromCents: p.services[0]?.priceCents ?? null,
-        topServices: p.services.slice(0, 3).map((s) => ({ name: s.name, priceCents: s.priceCents })),
+        services: shown.map((s) => ({
+          name: s.name,
+          priceCents: s.priceCents,
+          priceFrom: s.priceFrom,
+          icon: s.category.icon,
+        })),
+        moreServices: Math.max(0, p._count.services - shown.length),
         distanceKm: d == null ? null : Math.round(d * 10) / 10,
         // true when the provider's travel area covers the customer's location
         comesToYou: d != null && p.travels && d <= p.travelRadiusKm,
@@ -447,3 +463,8 @@ export class ProvidersService implements OnModuleInit {
   }
 }
 
+
+/** Accent/case-insensitive text for matching typed words ("ménage" == "Menage"). */
+function normText(s: string) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
