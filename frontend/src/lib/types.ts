@@ -30,6 +30,8 @@ export interface ProviderProfile {
   ratingAvg: number; ratingCount: number;
   services: Service[]; photos: Photo[]; openingHours: Hours[]; reviews: Review[];
   isPreview?: boolean;
+  /** Listing limits for this kind of provider (only on GET /me/profile). */
+  limits?: { categories: number; services: number };
 }
 
 export interface SearchResult {

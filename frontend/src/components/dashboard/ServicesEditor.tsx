@@ -12,6 +12,13 @@ const blank = { categoryId: '', name: '', description: '', price: '', priceFrom:
 
 export function ServicesEditor({ profile, onChange }: { profile: ProviderProfile; onChange: () => void }) {
   const [editing, setEditing] = useState<string | 'new' | null>(profile.services.length ? null : 'new');
+
+  // Listing limits (sent by the API for this kind of provider; fallback = independent).
+  const limits = profile.limits ?? { categories: 2, services: 15 };
+  const usedCategories = new Set(profile.services.map((s) => s.categoryId));
+  const atServiceLimit = profile.services.length >= limits.services;
+  // Categories already used by the *other* services: the one being edited may change freely within them.
+  const otherCategoryIds = new Set(profile.services.filter((s) => s.id !== editing).map((s) => s.categoryId));
   const [f, setF] = useState(blank);
   const [error, setError] = useState('');
 
@@ -57,14 +64,37 @@ export function ServicesEditor({ profile, onChange }: { profile: ProviderProfile
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="h-display text-xl font-bold">Mes services</h2>
-        {editing === null && <button onClick={() => edit()} className="btn-primary btn-sm">+ Ajouter</button>}
+        <div>
+          <h2 className="h-display text-xl font-bold">Mes services</h2>
+          <p className="text-xs text-muted">
+            {profile.services.length}/{limits.services} services · {usedCategories.size}/{limits.categories} catégories
+          </p>
+        </div>
+        {editing === null && (
+          <button onClick={() => edit()} disabled={atServiceLimit} className="btn-primary btn-sm">+ Ajouter</button>
+        )}
       </div>
+      {usedCategories.size > limits.categories && (
+        <p className="rounded-2xl bg-saffron/20 p-3 text-sm text-[#7a5205]">
+          Votre profil utilise {usedCategories.size} catégories, au-delà de la limite actuelle ({limits.categories}). Vos services
+          restent en ligne, mais vous ne pouvez plus ajouter de nouvelle catégorie.
+        </p>
+      )}
+      {atServiceLimit && editing === null && (
+        <p className="rounded-2xl bg-paper p-3 text-sm text-muted">
+          Vous avez atteint la limite de {limits.services} services. Supprimez-en un pour en ajouter un autre.
+        </p>
+      )}
 
       {editing && (
         <form onSubmit={save} className="card space-y-3 p-5">
           <div className="grid gap-3 sm:grid-cols-2">
-            <CategoryPicker value={f.categoryId} onChange={(id) => setF((s) => ({ ...s, categoryId: id }))} />
+            <CategoryPicker
+              value={f.categoryId}
+              onChange={(id) => setF((s) => ({ ...s, categoryId: id }))}
+              usedIds={otherCategoryIds}
+              maxCategories={limits.categories}
+            />
             <div>
               <label className="label" htmlFor="sn">Nom du service</label>
               <input id="sn" required minLength={2} className="input" placeholder="ex. Knotless braids mi-dos" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />

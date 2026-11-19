@@ -11,6 +11,7 @@ import { AuthUser } from '../common/auth.decorators';
 import { GeocodingService } from '../geo/geocoding.service';
 import { Notifier } from '../mail/notifier';
 import { PrismaService } from '../prisma/prisma.service';
+import { KIND_PLURAL, LIMITS } from './limits';
 import { OpeningHoursDto, SearchQueryDto, ServiceDto, UpsertProfileDto } from './dto/provider.dto';
 
 /** Relations loaded for a full profile page. */
@@ -185,9 +186,9 @@ export class ProvidersService {
   // PROVIDER — "my profile" (dashboard)
   // ===========================================================================
 
-  /** Returns the provider's own profile, or null if they haven't started onboarding. */
+  /** Returns the provider's own profile (+ the listing limits for its kind), or null before onboarding. */
   async getMine(userId: string) {
-    return this.prisma.providerProfile.findUnique({
+    const p = await this.prisma.providerProfile.findUnique({
       where: { userId },
       include: {
         ...FULL_PROFILE,
@@ -195,6 +196,7 @@ export class ProvidersService {
         moderation: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
     });
+    return p ? { ...p, limits: LIMITS[p.kind] } : null;
   }
 
   /** Create on first call, partial update afterwards. */
@@ -283,12 +285,17 @@ export class ProvidersService {
   async addService(userId: string, dto: ServiceDto) {
     const p = await this.requireMine(userId);
     await this.requireCategory(dto.categoryId);
+    await this.checkLimits(p.id, p.kind, dto.categoryId);
     return this.prisma.service.create({ data: { ...dto, profileId: p.id }, include: { category: true } });
   }
 
   async updateService(userId: string, serviceId: string, dto: Partial<ServiceDto>) {
-    await this.requireOwnedService(userId, serviceId);
+    const s = await this.requireOwnedService(userId, serviceId);
     if (dto.categoryId) await this.requireCategory(dto.categoryId);
+    // Moving a service to another category must respect the category limit.
+    if (dto.categoryId && dto.categoryId !== s.categoryId) {
+      await this.checkLimits(s.profileId, s.profile.kind, dto.categoryId, serviceId);
+    }
     return this.prisma.service.update({ where: { id: serviceId }, data: dto, include: { category: true } });
   }
 
@@ -366,6 +373,31 @@ export class ProvidersService {
     const p = await this.prisma.providerProfile.findUnique({ where: { userId } });
     if (!p) throw new NotFoundException("Créez d'abord votre profil");
     return p;
+  }
+
+  /**
+   * Refuses a new service (or a category change) that would exceed the
+   * limits for this kind of provider. `ignoreServiceId` = the service being
+   * edited, which must not count against itself.
+   */
+  private async checkLimits(profileId: string, kind: keyof typeof LIMITS, categoryId: string, ignoreServiceId?: string) {
+    const limit = LIMITS[kind];
+    const services = await this.prisma.service.findMany({
+      where: { profileId, ...(ignoreServiceId ? { id: { not: ignoreServiceId } } : {}) },
+      select: { categoryId: true },
+    });
+    if (!ignoreServiceId && services.length >= limit.services) {
+      throw new BadRequestException(
+        `${KIND_PLURAL[kind]} peuvent proposer ${limit.services} services au maximum. Supprimez-en un pour en ajouter un autre.`,
+      );
+    }
+    const used = new Set(services.map((x) => x.categoryId));
+    if (!used.has(categoryId) && used.size >= limit.categories) {
+      throw new BadRequestException(
+        `${KIND_PLURAL[kind]} peuvent proposer ${limit.categories} catégories au maximum. ` +
+          'Ajoutez ce service dans une de vos catégories actuelles, ou créez un profil séparé pour une autre activité.',
+      );
+    }
   }
 
   private async requireCategory(id: string) {
