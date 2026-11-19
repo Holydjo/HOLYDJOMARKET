@@ -12,7 +12,16 @@ import type { Category } from '@/lib/types';
 
 const NEW = '__new__';
 
-export function CategoryPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
+interface Props {
+  value: string;
+  onChange: (id: string) => void;
+  /** Categories already used by the provider's other services. */
+  usedIds?: Set<string>;
+  /** Max distinct categories for this provider (2 independent, 3 business). */
+  maxCategories?: number;
+}
+
+export function CategoryPicker({ value, onChange, usedIds = new Set(), maxCategories = Infinity }: Props) {
   const [cats, setCats] = useState<Category[]>([]);
   const [proposing, setProposing] = useState(false);
   const [name, setName] = useState('');
@@ -27,6 +36,10 @@ export function CategoryPicker({ value, onChange }: { value: string; onChange: (
   const approved = cats.filter((c) => c.status !== 'PENDING');
   const pending = cats.filter((c) => c.status === 'PENDING');
   const selected = cats.find((c) => c.id === value);
+  // Once the limit is reached, only the categories already in use can be chosen.
+  const full = usedIds.size >= maxCategories;
+  const locked = (id: string) => full && !usedIds.has(id);
+  const label = (c: Category) => `${c.icon} ${c.name}${locked(c.id) ? ' — limite atteinte' : ''}`;
 
   async function propose() {
     setError('');
@@ -63,14 +76,21 @@ export function CategoryPicker({ value, onChange }: { value: string; onChange: (
         }}
       >
         <option value="">Choisir…</option>
-        {approved.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+        {approved.map((c) => <option key={c.id} value={c.id} disabled={locked(c.id)}>{label(c)}</option>)}
         {pending.length > 0 && (
           <optgroup label="Proposées (en attente de validation)">
-            {pending.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+            {pending.map((c) => <option key={c.id} value={c.id} disabled={locked(c.id)}>{label(c)}</option>)}
           </optgroup>
         )}
-        <option value={NEW}>➕ Autre catégorie…</option>
+        {!full && <option value={NEW}>➕ Autre catégorie…</option>}
       </select>
+
+      {full && (
+        <p className="hint">
+          Vous utilisez déjà {usedIds.size} catégorie{usedIds.size > 1 ? 's' : ''} (maximum {maxCategories} pour votre type de
+          profil). Ajoutez ce service dans l’une d’elles, ou créez un profil séparé pour une autre activité.
+        </p>
+      )}
 
       {selected?.status === 'PENDING' && !proposing && (
         <p className="hint">Catégorie proposée : utilisable tout de suite, affichée publiquement après validation par notre équipe.</p>
