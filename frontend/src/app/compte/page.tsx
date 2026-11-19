@@ -61,7 +61,7 @@ function MyRequests() {
               </div>
               <span className={`badge ${APPT_STATUS[a.status].tone}`}>{APPT_STATUS[a.status].label}</span>
             </div>
-            <p className="mt-3 text-sm font-medium">🗓️ {dateTime(a.requestedAt)}</p>
+            <p className="mt-3 text-sm font-medium">🗓️ {dateTime(a.requestedAt, a.profile.timeZone)}</p>
             {a.providerNote && <p className="mt-2 rounded-2xl bg-paper p-3 text-sm"><span className="font-semibold">Réponse du pro :</span> {a.providerNote}</p>}
             <div className="mt-3 flex flex-wrap gap-2">
               {a.status === 'PENDING' && <button onClick={() => cancel(a.id)} className="btn-ghost btn-sm">Annuler</button>}

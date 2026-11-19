@@ -8,6 +8,7 @@
  */
 import { useEffect, useId, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { nearParams } from '@/lib/region';
 import type { GeoResult } from '@/lib/types';
 
 const KIND_ICON: Record<GeoResult['kind'], string> = { address: '🏠', street: '🛣️', district: '📍', city: '🏙️', other: '📌' };
@@ -20,9 +21,11 @@ interface Props {
   id?: string;
   className?: string;
   required?: boolean;
+  /** Favour suggestions around this point (default: the user's guessed region). */
+  near?: { lat: number; lng: number } | null;
 }
 
-export function PlaceInput({ value, onChange, onPick, placeholder, id, className = '', required }: Props) {
+export function PlaceInput({ value, onChange, onPick, placeholder, id, className = '', required, near }: Props) {
   const [items, setItems] = useState<GeoResult[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -35,7 +38,7 @@ export function PlaceInput({ value, onChange, onPick, placeholder, id, className
     let cancelled = false;
     const t = setTimeout(() => {
       api
-        .get<GeoResult[]>(`/places/search?q=${encodeURIComponent(value.trim())}`)
+        .get<GeoResult[]>(`/places/search?q=${encodeURIComponent(value.trim())}${nearParams(near)}`)
         .then((r) => {
           if (cancelled) return;
           setItems(r);
@@ -48,7 +51,9 @@ export function PlaceInput({ value, onChange, onPick, placeholder, id, className
       cancelled = true;
       clearTimeout(t);
     };
-  }, [value, touched]);
+    // Depend on the numbers, not the object: a new {lat,lng} each render would refetch in a loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, touched, near?.lat, near?.lng]);
 
   // Close when tapping outside.
   useEffect(() => {

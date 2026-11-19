@@ -2,10 +2,13 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { boundingBox, distanceKm, slugify } from '../common/geo';
+import { timeZoneAt } from '../common/timezone';
 import { findPlace } from '../common/places';
 import { AuthUser } from '../common/auth.decorators';
 import { GeocodingService } from '../geo/geocoding.service';
@@ -34,12 +37,24 @@ const DEFAULT_RADIUS_KM = 15;
 const logError = (e: Error) => console.error('[Mail]', e.message);
 
 @Injectable()
-export class ProvidersService {
+export class ProvidersService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private notify: Notifier,
     private geo: GeocodingService,
   ) {}
+
+  /** Fills the time zone of profiles created before it existed (runs once per start, cheap). */
+  async onModuleInit() {
+    const missing = await this.prisma.providerProfile.findMany({
+      where: { timeZone: null },
+      select: { id: true, latitude: true, longitude: true },
+    });
+    for (const p of missing) {
+      await this.prisma.providerProfile.update({ where: { id: p.id }, data: { timeZone: timeZoneAt(p.latitude, p.longitude) } });
+    }
+    if (missing.length) new Logger('Providers').log(`Time zone set on ${missing.length} profile(s)`);
+  }
 
   // ===========================================================================
   // PUBLIC — search & profile page
@@ -63,7 +78,8 @@ export class ProvidersService {
       const p = findPlace(q.place);
       if (p) center = { lat: p.lat, lng: p.lng, label: p.name };
       else {
-        const g = await this.geo.resolve(q.place);
+        const near = q.biasLat != null && q.biasLng != null ? { lat: q.biasLat, lng: q.biasLng } : undefined;
+        const g = await this.geo.resolve(q.place, near);
         if (g) center = { lat: g.lat, lng: g.lng, label: g.label };
       }
     }
@@ -232,6 +248,7 @@ export class ProvidersService {
           city: dto.city,
           latitude: dto.latitude,
           longitude: dto.longitude,
+          timeZone: timeZoneAt(dto.latitude, dto.longitude),
           userId,
           slug: await this.uniqueSlug(dto.displayName),
         },
@@ -240,6 +257,7 @@ export class ProvidersService {
 
     // Changing identity fields on a live profile requires a new admin check.
     const data: Prisma.ProviderProfileUpdateInput = { ...dto };
+    if (dto.latitude != null && dto.longitude != null) data.timeZone = timeZoneAt(dto.latitude, dto.longitude);
     const sensitiveChanged = SENSITIVE_FIELDS.some(
       (f) => dto[f] !== undefined && dto[f] !== (existing as any)[f],
     );

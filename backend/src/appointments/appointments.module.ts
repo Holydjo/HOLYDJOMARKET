@@ -38,7 +38,7 @@ class UpdateAppointmentDto {
 
 const INCLUDE = {
   service: { select: { name: true, priceCents: true, durationMin: true } },
-  profile: { select: { displayName: true, slug: true, phone: true, whatsapp: true } },
+  profile: { select: { displayName: true, slug: true, phone: true, whatsapp: true, timeZone: true } },
   customer: { select: { firstName: true, lastName: true, email: true, phone: true } },
 };
 

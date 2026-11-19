@@ -13,6 +13,7 @@ import { BookingForm } from '@/components/BookingForm';
 import { Alert, Cover, Spinner, Stars } from '@/components/ui';
 import { api } from '@/lib/api';
 import { KIND_LABEL, MODE_LABEL, MODES, PROFILE_STATUS, WEEK_ORDER, WEEKDAYS, duration, money } from '@/lib/labels';
+import { DEFAULT_TZ, nowIn } from '@/lib/time';
 import type { ProviderProfile } from '@/lib/types';
 
 export default function ProfilePage() {
@@ -144,7 +145,7 @@ export default function ProfilePage() {
             <ul className="card mt-3 divide-y divide-line text-sm">
               {WEEK_ORDER.map((d) => {
                 const h = p.openingHours.find((x) => x.weekday === d);
-                const today = new Date().getDay() === d;
+                const today = nowIn(p.timeZone ?? DEFAULT_TZ).weekday === d;
                 return (
                   <li key={d} className={`flex justify-between px-4 py-2.5 ${today ? 'font-semibold' : ''}`}>
                     <span>{WEEKDAYS[d]}{today && ' (aujourd’hui)'}</span>
@@ -227,10 +228,10 @@ export default function ProfilePage() {
   );
 }
 
+/** "Open now" is computed with the provider's local time, not the viewer's. */
 function isOpenNow(p: ProviderProfile) {
-  const now = new Date();
-  const h = p.openingHours.find((x) => x.weekday === now.getDay());
+  const now = nowIn(p.timeZone ?? DEFAULT_TZ);
+  const h = p.openingHours.find((x) => x.weekday === now.weekday);
   if (!h || h.closed || !h.opensAt || !h.closesAt) return false;
-  const hhmm = now.toTimeString().slice(0, 5);
-  return hhmm >= h.opensAt && hhmm < h.closesAt;
+  return now.hhmm >= h.opensAt && now.hhmm < h.closesAt;
 }

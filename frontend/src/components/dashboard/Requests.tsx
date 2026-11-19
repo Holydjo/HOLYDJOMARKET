@@ -41,7 +41,7 @@ export function Requests() {
             </div>
             <span className={`badge ${APPT_STATUS[a.status].tone}`}>{APPT_STATUS[a.status].label}</span>
           </div>
-          <p className="mt-3 text-sm font-medium">🗓️ {dateTime(a.requestedAt)}</p>
+          <p className="mt-3 text-sm font-medium">🗓️ {dateTime(a.requestedAt, a.profile.timeZone)}</p>
           {a.location && <p className="mt-1 text-sm">📍 {a.location}</p>}
           {a.message && <p className="mt-2 rounded-2xl bg-paper p-3 text-sm">“{a.message}”</p>}
           {a.status === 'ACCEPTED' && (

@@ -3,6 +3,7 @@
  * but every label reused across screens lives here so an English version can
  * be added later by swapping this dictionary.
  */
+import { zoneLabelIfDifferent } from './time';
 import type { AppointmentStatus, Mode, ProfileStatus, ProviderKind } from './types';
 
 export const MODE_LABEL: Record<Mode, { label: string; short: string; icon: string }> = {
@@ -39,5 +40,11 @@ export const money = (cents: number) =>
 export const duration = (min?: number | null) =>
   !min ? '' : min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60}` : ''}`;
 
-export const dateTime = (iso: string) =>
-  new Intl.DateTimeFormat('fr-CA', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+/** Appointment date/time, shown in the provider's time zone (+ zone label if it isn't the viewer's). */
+export const dateTime = (iso: string, timeZone?: string | null) => {
+  const text = new Intl.DateTimeFormat('fr-CA', {
+    weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', ...(timeZone ? { timeZone } : {}),
+  }).format(new Date(iso));
+  const zone = zoneLabelIfDifferent(timeZone);
+  return zone ? `${text} (${zone})` : text;
+};

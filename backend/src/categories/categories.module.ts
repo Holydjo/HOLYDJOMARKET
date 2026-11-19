@@ -33,9 +33,17 @@ class CatalogController {
 
   @Get('places/search')
   @Throttle({ default: { ttl: 60_000, limit: 40 } }) // protects the free geocoder
-  search(@Query('q') q = '') {
-    return this.geo.search(String(q).slice(0, 120));
+  search(@Query('q') q = '', @Query('lat') lat?: string, @Query('lng') lng?: string) {
+    return this.geo.search(String(q).slice(0, 120), 6, near(lat, lng));
   }
+}
+
+/** Optional "near" point for address suggestions; ignored unless it's a valid position. */
+function near(lat?: string, lng?: string) {
+  const la = Number(lat), lo = Number(lng);
+  return Number.isFinite(la) && Number.isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180 && lat && lng
+    ? { lat: la, lng: lo }
+    : undefined;
 }
 
 class ProposeCategoryDto {

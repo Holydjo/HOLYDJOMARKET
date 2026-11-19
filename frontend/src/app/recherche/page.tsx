@@ -14,6 +14,7 @@ import { SearchBar, toQuery } from '@/components/SearchBar';
 import { Alert, Empty, Spinner } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useCategories } from '@/lib/hooks';
+import { nearParams } from '@/lib/region';
 import { MODE_LABEL, MODES } from '@/lib/labels';
 import type { SearchResponse } from '@/lib/types';
 
@@ -43,10 +44,11 @@ function Results() {
 
   useEffect(() => {
     api
-      .get<SearchResponse>(`/providers/search?${qs}`)
+      // A typed place ("King Street") is interpreted near the user's region.
+      .get<SearchResponse>(`/providers/search?${qs}${params.get('place') && !params.get('lat') ? nearParams(null, 'bias') : ''}`)
       .then((data) => setRes({ qs, data }))
       .catch((e) => setRes({ qs, error: e.message }));
-  }, [qs]);
+  }, [qs, params]);
   const data = res?.qs === qs ? res.data ?? null : null;
   const error = res?.qs === qs ? res.error ?? '' : '';
 

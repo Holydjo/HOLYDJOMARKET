@@ -117,6 +117,7 @@ export function ProfileForm({ profile, onSaved }: { profile: ProviderProfile | n
             placeholder="Commencez à taper votre adresse…"
             value={f.address}
             onChange={(v) => editLocation('address', v)}
+            near={profile ? { lat: profile.latitude, lng: profile.longitude } : null}
             onPick={(r) =>
               setF((s) => ({
                 ...s,

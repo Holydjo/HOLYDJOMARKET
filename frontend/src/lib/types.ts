@@ -24,7 +24,7 @@ export interface Review { id: string; rating: number; comment?: string | null; c
 export interface ProviderProfile {
   id: string; slug: string; kind: ProviderKind; displayName: string; tagline?: string | null; description?: string | null;
   phone?: string | null; whatsapp?: string | null; address?: string | null; neighbourhood?: string | null; city: string;
-  latitude: number; longitude: number;
+  latitude: number; longitude: number; timeZone?: string | null;
   atHome: boolean; inSalon: boolean; inShop: boolean; travels: boolean; travelRadiusKm: number;
   status: ProfileStatus; rejectionReason?: string | null; submittedAt?: string | null;
   ratingAvg: number; ratingCount: number;
@@ -49,6 +49,6 @@ export interface Appointment {
   id: string; requestedAt: string; status: AppointmentStatus; message?: string | null; location?: string | null;
   providerNote?: string | null; createdAt: string; profileId: string;
   service?: { name: string; priceCents: number; durationMin?: number | null } | null;
-  profile: { displayName: string; slug: string; phone?: string | null; whatsapp?: string | null };
+  profile: { displayName: string; slug: string; phone?: string | null; whatsapp?: string | null; timeZone?: string | null };
   customer: { firstName: string; lastName: string; email: string; phone?: string | null };
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { duration, money } from '@/lib/labels';
+import { DEFAULT_TZ, zonedToUtcIso, zoneCity, zoneLabelIfDifferent } from '@/lib/time';
 import type { ProviderProfile } from '@/lib/types';
 import { Alert } from './ui';
 
@@ -30,7 +31,8 @@ export function BookingForm({ profile, preselect }: { profile: ProviderProfile; 
       await api.post('/appointments', {
         profileId: profile.id,
         serviceId: serviceId || undefined,
-        requestedAt: new Date(`${date}T${time}`).toISOString(),
+        // The time is the provider's local time (where the appointment happens).
+        requestedAt: zonedToUtcIso(date, time, profile.timeZone ?? DEFAULT_TZ),
         location: location || undefined,
         message: message || undefined,
       });
@@ -73,6 +75,11 @@ export function BookingForm({ profile, preselect }: { profile: ProviderProfile; 
           <input id="t" type="time" required step={900} className="input" value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
       </div>
+      {zoneLabelIfDifferent(profile.timeZone) && (
+        <p className="hint">
+          Heure locale du prestataire : {zoneCity(profile.timeZone!)} ({zoneLabelIfDifferent(profile.timeZone)}).
+        </p>
+      )}
       {profile.travels && (
         <div>
           <label className="label" htmlFor="loc">Adresse {onlyTravels ? '' : '(si le pro se déplace)'}</label>

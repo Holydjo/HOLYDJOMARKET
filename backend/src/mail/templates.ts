@@ -48,10 +48,21 @@ ${b.cta ? `<p style="margin:20px 0 4px"><a href="${esc(b.cta.url)}" style="displ
   return { html, text };
 }
 
-export const fmtDate = (d: Date) =>
-  new Intl.DateTimeFormat('fr-CA', {
-    weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'America/Toronto',
+/**
+ * Date + time in the provider's time zone (where the appointment happens),
+ * with the zone abbreviation when it isn't Eastern time, e.g. "samedi 5 décembre à 10 h 00 (HNP)".
+ */
+export const fmtDate = (d: Date, timeZone?: string | null) => {
+  const tz = timeZone || 'America/Toronto';
+  const text = new Intl.DateTimeFormat('fr-CA', {
+    weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: tz,
   }).format(d);
+  if (tz === 'America/Toronto') return text;
+  const zone = new Intl.DateTimeFormat('fr-CA', { timeZone: tz, timeZoneName: 'short' })
+    .formatToParts(d)
+    .find((p) => p.type === 'timeZoneName')?.value;
+  return zone ? `${text} (${zone})` : text;
+};
 
 export const fmtMoney = (cents: number) =>
   new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD' }).format(cents / 100);

@@ -36,12 +36,18 @@ export class GeocodingService {
     this.bias = { lat: Number(config.get('GEO_BIAS_LAT', 45.52)), lng: Number(config.get('GEO_BIAS_LNG', -73.6)) };
   }
 
-  /** Suggestions while typing. Known neighbourhoods come first, then OpenStreetMap results. */
-  async search(query: string, limit = 6): Promise<GeoResult[]> {
+  /**
+   * Suggestions while typing. Known neighbourhoods come first, then OpenStreetMap results.
+   * `near` = where the user probably is (their last GPS position, or their region);
+   * without it, results are favoured around GEO_BIAS_LAT/LNG (Montréal).
+   */
+  async search(query: string, limit = 6, near?: { lat: number; lng: number }): Promise<GeoResult[]> {
     const q = query.trim();
     if (q.length < 2) return [];
-    const local = this.localMatches(q);
-    const remote = q.length >= 3 ? await this.photon(q, limit) : [];
+    const bias = near ?? this.bias;
+    // The built-in list is Montréal-only: only offer it to users around Montréal.
+    const local = Math.abs(bias.lat - 45.5) < 1.5 && Math.abs(bias.lng + 73.6) < 2 ? this.localMatches(q) : [];
+    const remote = q.length >= 3 ? await this.photon(q, limit, bias) : [];
     // De-duplicate: OpenStreetMap often returns the same place several times
     // (city boundary + city node, both sides of a street…). Keep the first label.
     const seen = new Set<string>();
@@ -54,8 +60,8 @@ export class GeocodingService {
   }
 
   /** Best single match (used when a search URL contains free text instead of coordinates). */
-  async resolve(query: string): Promise<GeoResult | null> {
-    return (await this.search(query, 1))[0] ?? null;
+  async resolve(query: string, near?: { lat: number; lng: number }): Promise<GeoResult | null> {
+    return (await this.search(query, 1, near))[0] ?? null;
   }
 
   private localMatches(q: string): GeoResult[] {
@@ -71,15 +77,16 @@ export class GeocodingService {
     }));
   }
 
-  private async photon(q: string, limit: number): Promise<GeoResult[]> {
-    const key = `${norm(q)}|${limit}`;
+  private async photon(q: string, limit: number, bias: { lat: number; lng: number }): Promise<GeoResult[]> {
+    // Bias rounded to ~10 km so the cache still works for nearby users.
+    const key = `${norm(q)}|${limit}|${bias.lat.toFixed(1)}|${bias.lng.toFixed(1)}`;
     const hit = this.cache.get(key);
     if (hit && Date.now() - hit.at < 24 * 3600_000) return hit.results;
 
     const params = new URLSearchParams({
       q,
-      lat: String(this.bias.lat),
-      lon: String(this.bias.lng),
+      lat: String(bias.lat),
+      lon: String(bias.lng),
       zoom: '11',
       location_bias_scale: '0.6',
       limit: String(limit + 4), // a few extra: some are filtered out below

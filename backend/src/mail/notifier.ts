@@ -66,7 +66,7 @@ export class Notifier {
       lines: [`${a.customer.firstName} ${a.customer.lastName[0]}. souhaite prendre rendez-vous avec ${a.profile.displayName}.`],
       quote: a.message ?? undefined,
       details: [
-        ['Date souhaitée', fmtDate(a.requestedAt)],
+        ['Date souhaitée', fmtDate(a.requestedAt, a.profile.timeZone)],
         ['Service', a.service ? `${a.service.name} (${fmtMoney(a.service.priceCents)})` : 'À préciser'],
         ...(a.location ? ([['Adresse', a.location]] as [string, string][]) : []),
       ],
@@ -85,7 +85,7 @@ export class Notifier {
         : [`${a.profile.displayName} n’est pas disponible pour ce créneau.`, 'Vous pouvez proposer une autre date ou trouver un autre pro près de chez vous.'],
       quote: a.providerNote ?? undefined,
       details: [
-        ['Date', fmtDate(a.requestedAt)],
+        ['Date', fmtDate(a.requestedAt, a.profile.timeZone)],
         ...(a.service ? ([['Service', a.service.name]] as [string, string][]) : []),
         ...(ok && a.profile.phone ? ([['Téléphone', a.profile.phone]] as [string, string][]) : []),
         // Home-based providers' address is only revealed once the appointment is confirmed.
@@ -103,7 +103,7 @@ export class Notifier {
     this.send(a.profile.user.email, `Demande annulée par ${a.customer.firstName}`, {
       heading: 'Une demande a été annulée',
       lines: [`${a.customer.firstName} ${a.customer.lastName[0]}. a annulé sa demande de rendez-vous.`],
-      details: [['Date prévue', fmtDate(a.requestedAt)]],
+      details: [['Date prévue', fmtDate(a.requestedAt, a.profile.timeZone)]],
       cta: { label: 'Voir mes demandes', url: `${this.appUrl}/dashboard` },
     });
   }
