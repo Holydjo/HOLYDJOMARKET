@@ -16,6 +16,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
+import { IsOptionalCaPhone } from '../../common/phone';
 
 /** Everything a provider can edit on their own profile (all optional = partial update). */
 export class UpsertProfileDto {
@@ -23,8 +24,8 @@ export class UpsertProfileDto {
   @IsOptional() @IsString() @MinLength(2) @MaxLength(80) displayName?: string;
   @IsOptional() @IsString() @MaxLength(120) tagline?: string;
   @IsOptional() @IsString() @MaxLength(2000) description?: string;
-  @IsOptional() @IsString() @MaxLength(30) phone?: string;
-  @IsOptional() @IsString() @MaxLength(30) whatsapp?: string;
+  @IsOptionalCaPhone() phone?: string | null;
+  @IsOptionalCaPhone() whatsapp?: string | null;
 
   @IsOptional() @IsString() @MaxLength(200) address?: string;
   @IsOptional() @IsString() @MaxLength(80) neighbourhood?: string;

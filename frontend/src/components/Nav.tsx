@@ -36,7 +36,9 @@ export function Header() {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <span className="hidden text-sm text-muted sm:inline">Bonjour {user.firstName}</span>
+              <Link href="/parametres" className="hidden rounded-full px-3 py-2 text-sm text-muted hover:bg-line/60 hover:text-ink sm:inline" title="Mon compte">
+                Bonjour {user.firstName}
+              </Link>
               <button
                 className="btn-ghost btn-sm"
                 onClick={() => {
@@ -71,7 +73,7 @@ export function BottomNav() {
       : user?.role === 'ADMIN'
         ? { href: '/admin', label: 'Modération', icon: ShieldIcon }
         : { href: '/compte', label: 'Demandes', icon: CalIcon },
-    { href: user ? homeFor(user) : '/connexion', label: user ? 'Compte' : 'Connexion', icon: UserIcon },
+    { href: user ? '/parametres' : '/connexion', label: user ? 'Compte' : 'Connexion', icon: UserIcon },
   ];
 
   return (

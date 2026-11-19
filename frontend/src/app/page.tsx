@@ -18,6 +18,17 @@ import type { SearchResponse } from '@/lib/types';
 export default function Home() {
   const cats = useCategories();
   const [featured, setFeatured] = useState<SearchResponse['results']>([]);
+  const [deleted, setDeleted] = useState(false);
+
+  // Confirmation after "Supprimer mon compte" (set by /parametres just before redirecting here).
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('holydjo_account_deleted')) {
+        sessionStorage.removeItem('holydjo_account_deleted');
+        setTimeout(() => setDeleted(true), 0); // after hydration (the server can't read sessionStorage)
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     api.get<SearchResponse>('/providers/search?sort=rating').then((r) => setFeatured(r.results.slice(0, 6))).catch(() => {});
@@ -25,6 +36,11 @@ export default function Home() {
 
   return (
     <>
+      {deleted && (
+        <div className="container-x pt-4" role="status">
+          <p className="rounded-2xl bg-green-soft px-4 py-3 text-sm text-green">Votre compte et vos données ont été supprimés. Merci d’avoir utilisé HOLYDJO MARKET.</p>
+        </div>
+      )}
       {/* ---------- HERO ---------- */}
       <section className="relative z-10">
         {/* Decorative blobs are clipped in their own layer so the search suggestions can overflow the hero. */}

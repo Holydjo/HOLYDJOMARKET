@@ -14,9 +14,11 @@ interface AuthCtx {
   loading: boolean;
   signIn: (token: string, user: User) => void;
   signOut: () => void;
+  /** Replace the user in memory after editing "Mon compte". */
+  updateUser: (user: User) => void;
 }
 
-const Ctx = createContext<AuthCtx>({ user: null, loading: true, signIn: () => {}, signOut: () => {} });
+const Ctx = createContext<AuthCtx>({ user: null, loading: true, signIn: () => {}, signOut: () => {}, updateUser: () => {} });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -39,7 +41,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  return <Ctx.Provider value={{ user, loading, signIn, signOut }}>{children}</Ctx.Provider>;
+  const updateUser = useCallback((u: User) => setUser(u), []);
+
+  return <Ctx.Provider value={{ user, loading, signIn, signOut, updateUser }}>{children}</Ctx.Provider>;
 }
 
 export const useAuth = () => useContext(Ctx);

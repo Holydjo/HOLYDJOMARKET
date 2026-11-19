@@ -16,6 +16,7 @@ import { Throttle } from '@nestjs/throttler';
 import { IsDateString, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { AuthUser, CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '../common/auth.decorators';
 import { Notifier } from '../mail/notifier';
+import { assertEmailVerified } from '../common/verified';
 import { PrismaService } from '../prisma/prisma.service';
 
 // -----------------------------------------------------------------------------
@@ -52,6 +53,7 @@ class AppointmentsService {
   ) {}
 
   async create(customerId: string, dto: CreateAppointmentDto) {
+    await assertEmailVerified(this.prisma, customerId);
     const profile = await this.prisma.providerProfile.findUnique({ where: { id: dto.profileId } });
     if (!profile || profile.status !== 'APPROVED') throw new NotFoundException('Prestataire introuvable');
     if (profile.userId === customerId) throw new BadRequestException('Vous ne pouvez pas vous réserver vous-même');

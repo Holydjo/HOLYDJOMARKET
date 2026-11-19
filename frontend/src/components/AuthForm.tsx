@@ -97,7 +97,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           )}
           <div><label className="label" htmlFor="em">Email</label><input id="em" type="email" required className="input" value={form.email} onChange={set('email')} autoComplete="email" /></div>
           {mode === 'register' && (
-            <div><label className="label" htmlFor="ph">Téléphone <span className="text-muted">(facultatif)</span></label><input id="ph" type="tel" className="input" value={form.phone} onChange={set('phone')} autoComplete="tel" /></div>
+            <div><label className="label" htmlFor="ph">Téléphone <span className="text-muted">(facultatif)</span></label><input id="ph" type="tel" inputMode="tel" className="input" placeholder="514-555-1234" value={form.phone} onChange={set('phone')} autoComplete="tel" /></div>
           )}
           <div>
             <label className="label" htmlFor="pw">Mot de passe</label>

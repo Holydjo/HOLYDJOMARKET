@@ -11,6 +11,8 @@ import {
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { AuthUser, CurrentUser, JwtAuthGuard } from '../common/auth.decorators';
+import { refreshRating } from '../auth/auth.service';
+import { assertEmailVerified } from '../common/verified';
 import { PrismaService } from '../prisma/prisma.service';
 
 class CreateReviewDto {
@@ -29,6 +31,7 @@ class ReviewsService {
   constructor(private prisma: PrismaService) {}
 
   async upsert(authorId: string, dto: CreateReviewDto) {
+    await assertEmailVerified(this.prisma, authorId);
     const profile = await this.prisma.providerProfile.findUnique({ where: { id: dto.profileId } });
     if (!profile || profile.status !== 'APPROVED') throw new NotFoundException();
     const hadAppointment = await this.prisma.appointmentRequest.count({
@@ -45,15 +48,7 @@ class ReviewsService {
     });
 
     // Refresh the denormalised rating on the profile (used for sorting in search).
-    const agg = await this.prisma.review.aggregate({
-      where: { profileId: profile.id },
-      _avg: { rating: true },
-      _count: true,
-    });
-    await this.prisma.providerProfile.update({
-      where: { id: profile.id },
-      data: { ratingAvg: Math.round((agg._avg.rating ?? 0) * 10) / 10, ratingCount: agg._count },
-    });
+    await refreshRating(this.prisma, profile.id);
     return review;
   }
 }

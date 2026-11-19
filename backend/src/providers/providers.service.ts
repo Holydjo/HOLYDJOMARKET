@@ -9,6 +9,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { boundingBox, distanceKm, slugify } from '../common/geo';
 import { timeZoneAt } from '../common/timezone';
+import { assertEmailVerified } from '../common/verified';
 import { findPlace } from '../common/places';
 import { AuthUser } from '../common/auth.decorators';
 import { GeocodingService } from '../geo/geocoding.service';
@@ -190,6 +191,16 @@ export class ProvidersService implements OnModuleInit {
     return { center, radiusKm: radius, total: results.length, results: results.slice(0, 60) };
   }
 
+  /** Slugs + last update of every published profile (for sitemap.xml). */
+  sitemap() {
+    return this.prisma.providerProfile.findMany({
+      where: { status: 'APPROVED' },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 5000,
+    });
+  }
+
   /**
    * Public profile page. Non-approved profiles are only visible to their owner
    * (preview) and to admins (moderation).
@@ -289,6 +300,7 @@ export class ProvidersService implements OnModuleInit {
 
   /** DRAFT/REJECTED → PENDING, after checking the profile is complete enough. */
   async submitMine(userId: string) {
+    await assertEmailVerified(this.prisma, userId);
     const p = await this.requireMine(userId);
     if (p.status === 'PENDING') return p;
     if (p.status === 'APPROVED') throw new BadRequestException('Profil déjà publié');

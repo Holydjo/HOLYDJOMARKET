@@ -38,6 +38,12 @@ export class ProvidersController {
     return this.providers.search(q);
   }
 
+  /** GET /providers/sitemap — published profiles for the website's sitemap.xml (audit H5). */
+  @Get('sitemap')
+  sitemap() {
+    return this.providers.sitemap();
+  }
+
   /** GET /providers/:slug — public profile page */
   @Get(':slug')
   @UseGuards(OptionalJwtGuard)
